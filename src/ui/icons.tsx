@@ -1,6 +1,6 @@
 import {
   AirplaneTilt, ArrowUUpLeft, Bank, Bed, Bus, Camera as PCamera, ClipboardText, DownloadSimple, ForkKnife, Images, Keyboard as PKeyboard,
-  MaskHappy, QrCode, TrainSimple, UploadSimple, X,
+  MaskHappy, QrCode, Sun, TrainSimple, UploadSimple, X,
   type Icon,
 } from "@phosphor-icons/react";
 import type { Category } from "../categories";
@@ -18,6 +18,7 @@ export const Keyboard = make(PKeyboard, 24);
 export const Download = make(DownloadSimple, 18);
 export const Upload = make(UploadSimple, 18);
 export const Undo = make(ArrowUUpLeft, 18);
+export const Bright = make(Sun, 22);
 
 const BY_CATEGORY: Record<Category, Icon> = {
   train: TrainSimple,

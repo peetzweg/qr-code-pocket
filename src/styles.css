@@ -87,8 +87,8 @@ a { color: inherit; }
 /* ---------- Deck: tickets stacked like a wallet ---------- */
 .deck { padding: 18px 14px calc(var(--safe-bottom) + 60px); display: flex; flex-direction: column; }
 .card {
-  --tear: 104px;
-  --h: 148px;
+  --tear: 126px;
+  --h: 168px;
   position: relative; display: flex; flex-direction: column; width: 100%; height: var(--h); text-align: left;
   background: var(--bg); border: var(--rule);
   transition: transform 160ms var(--ease-out);
@@ -98,23 +98,24 @@ a { color: inherit; }
  * its tear line; on the others the next card lies exactly there.
  */
 .card:last-child::before, .card:last-child::after {
-  content: ""; position: absolute; top: calc(var(--tear) - 9px); width: 18px; height: 18px;
+  content: ""; position: absolute; top: calc(var(--tear) - 10px); width: 20px; height: 20px;
   border-radius: 50%; background: var(--bg); border: var(--rule); box-sizing: border-box;
 }
-.card:last-child::before { left: -10px; clip-path: inset(0 0 0 50%); }
-.card:last-child::after { right: -10px; clip-path: inset(0 50% 0 0); }
+.card:last-child::before { left: -11px; clip-path: inset(0 0 0 50%); }
+.card:last-child::after { right: -11px; clip-path: inset(0 50% 0 0); }
 .card:not(:last-child) .card-tear, .card:not(:last-child) .card-foot { visibility: hidden; }
 .card + .card { margin-top: calc(var(--tear) - var(--h) - 1px); }
 .card:active { transform: scale(0.985); }
 .card.used { border-style: dashed; }
-.card-head { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 14px; padding: 14px 14px 0 16px; height: var(--tear); position: relative; }
-.card-text { display: flex; flex-direction: column; min-width: 0; }
-.card-title { font: 400 25px/1.05 var(--serif); font-optical-sizing: auto; letter-spacing: -0.015em; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-sub { font-size: 13px; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-sub b { font-weight: 600; font-variant-numeric: tabular-nums; }
-.card-qr { width: 76px; height: 76px; flex: none; }
-.card-qr.none { display: grid; place-items: center; border: var(--dash); background: none; }
-.card-postmark { position: absolute; right: 46px; top: 6px; width: 110px; color: var(--fg); pointer-events: none; --paper-under: var(--bg); }
+.card-head { display: flex; flex-direction: column; padding: 14px 16px 0; height: var(--tear); position: relative; min-width: 0; }
+.card-kicker { display: flex; justify-content: space-between; gap: 10px; }
+.card-title { font: 400 27px/1.04 var(--serif); font-optical-sizing: auto; letter-spacing: -0.015em; margin-top: 7px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-when { display: flex; align-items: flex-end; gap: 10px; margin-top: auto; padding-bottom: 12px; min-width: 0; }
+.card-time { font: 300 30px/0.9 var(--sans); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.card-sub { display: flex; flex-direction: column; font-size: 12.5px; line-height: 1.25; min-width: 0; }
+.card-sub b { font-weight: 600; }
+.card-sub span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-postmark { position: absolute; right: 8px; top: 18px; width: 120px; color: var(--fg); pointer-events: none; --paper-under: var(--bg); }
 .card-tear { position: absolute; left: 15px; right: 10px; top: var(--tear); height: 1px; background: linear-gradient(to right, var(--fg) 6.5px, transparent 0) 0 0 / 11.5px 1px round; }
 .card-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 16px; height: calc(var(--h) - var(--tear)); }
 .card-foot .mono { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -135,8 +136,14 @@ a { color: inherit; }
 .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; }
 .pager-track, .style-track { flex: 1; min-height: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
 .pager-track::-webkit-scrollbar, .style-track::-webkit-scrollbar { display: none; }
-.page { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; padding: 4px 10px calc(var(--safe-bottom) + 12px); min-height: 0; }
-.ticket { flex: 1; min-height: 0; display: flex; flex-direction: column; border: var(--rule); position: relative; }
+.page { flex: 0 0 100%; height: 100%; scroll-snap-align: center; scroll-snap-stop: always; overflow-y: auto; overscroll-behavior-y: auto; -webkit-overflow-scrolling: touch; }
+.page::-webkit-scrollbar { display: none; }
+/* The first screen: the ticket and its two buttons. Details follow below it. */
+.page-main { height: 100%; display: flex; flex-direction: column; padding: 4px 10px calc(var(--safe-bottom) + 6px); min-height: 0; }
+.more-hint { justify-content: center; padding-top: 8px; flex: none; }
+.page-more { padding: 6px 18px calc(var(--safe-bottom) + 36px); }
+.page-more .section { margin-top: 0; }
+.ticket { flex: 1; min-height: 0; display: flex; flex-direction: column; border: var(--rule); position: relative; background: var(--bg); }
 .t-head { padding: 14px 16px 12px; }
 .t-kicker { display: flex; justify-content: space-between; gap: 10px; }
 .t-title { font-weight: 400; line-height: 1; letter-spacing: -0.025em; margin-top: 10px; }
@@ -160,6 +167,13 @@ a { color: inherit; }
 .fit-box { width: min(100cqw - 60px, 100cqh - 60px); aspect-ratio: 1; }
 .t-code { position: relative; }
 .t-image { width: 100%; height: 100%; object-fit: contain; filter: grayscale(1) contrast(1.4); mix-blend-mode: multiply; }
+/* Bright: the code on a lit plate. White first; the HDR video lights it brighter where supported. */
+.lit { position: relative; width: 100%; height: 100%; background: #fff; overflow: hidden; }
+.lit-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+.lit .qr { position: relative; }
+.icon-btn.bright { border: 1px solid transparent; }
+.icon-btn.bright.on { border-color: var(--fg); }
+.plain .lit-video { position: fixed; inset: 0; z-index: -1; }
 .t-postmark { position: absolute; right: -6%; top: 6%; width: 64%; color: var(--fg); pointer-events: none; --paper-under: var(--bg); }
 .t-foot { padding: 0 16px 12px; flex: none; }
 .t-foot .t-bits { margin: 0 2px; }
@@ -212,14 +226,16 @@ a { color: inherit; }
 /* View transitions: the code grows from its card into the ticket and back. */
 ::view-transition-group(*) { animation-duration: 420ms; animation-timing-function: var(--ease-drawer); }
 /*
- * The code is the identical picture in the card and on the ticket, so only the new snapshot is
- * shown and it simply moves and scales; no crossfade, no double image.
+ * The card unfolds into the ticket: the group grows from the card's box to the ticket's, clipping
+ * its contents, while the card's picture fades out and the ticket's (pinned to the top, at its own
+ * size) fades in, so the ticket looks revealed from the top down. The screens underneath: the one
+ * below stays put, the full-screen ticket fades over it, and back.
  */
-::view-transition-old(*) { animation: none; opacity: 0; }
-::view-transition-new(*) { animation: none; mix-blend-mode: normal; width: 100%; height: 100%; }
-/* The screens: the one underneath stays put, the full-screen ticket fades over it (and back). */
-::view-transition-old(root) { animation: none; opacity: 1; }
-::view-transition-new(root) { animation: vt-in 200ms var(--ease-out) both; }
+::view-transition-group(*) { overflow: clip; }
+::view-transition-old(*) { animation: vt-out 130ms var(--ease-out) both; height: auto; }
+::view-transition-new(*) { animation: vt-in 220ms var(--ease-out) 70ms both; height: auto; }
+::view-transition-old(root) { animation: none; opacity: 1; height: 100%; }
+::view-transition-new(root) { animation: vt-in 200ms var(--ease-out) both; height: 100%; }
 html[data-vt="close"]::view-transition-old(root) { z-index: 1; animation: vt-out 200ms var(--ease-out) both; }
 html[data-vt="close"]::view-transition-new(root) { animation: none; }
 @keyframes vt-out { to { opacity: 0; } }
@@ -307,6 +323,15 @@ html[data-vt="close"]::view-transition-new(root) { animation: none; }
 .mode-chip { width: 22px; height: 15px; border: 1px solid currentColor; }
 .mode-chip.line { background: transparent; box-shadow: inset 0 0 0 3px transparent, inset 0 0 0 4px currentColor; }
 .mode-chip.flood { background: currentColor; }
+.edit-tabs { display: flex; gap: 18px; background: var(--dashes) 0 100% / 11.5px 1px repeat-x; }
+.edit-tabs button { padding: 6px 0 8px; font-size: 14px; border-bottom: 2px solid transparent; }
+.edit-tabs button.on { border-bottom-color: var(--fg); font-weight: 650; }
+/* A look, previewed in its own two colours (not the app's current ones). */
+.look-preview { display: grid; grid-template-columns: 1fr 112px; gap: 16px; align-items: center; padding: 16px 18px; border: 1px solid var(--fg); transition: background-color 200ms ease, color 200ms ease; }
+.lp-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lp-title { font: 400 26px/1.05 var(--serif); letter-spacing: -0.015em; }
+.lp-time { font: 300 34px/1 var(--sans); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.lp-code { width: 112px; aspect-ratio: 1; --o: 8px; }
 /* Omakase: each tile in its colour, its kanji printed in the paper colour. */
 .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .swatch { position: relative; aspect-ratio: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; background: var(--sw); color: var(--sw-paper); text-align: left; transition: transform 160ms var(--ease-out); }

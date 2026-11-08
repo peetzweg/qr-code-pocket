@@ -51,8 +51,9 @@ function codeUrl(code: Pick<Code, "text" | "format" | "bytes">, style: QrStyle, 
   return u;
 }
 
-export function useCodeUrl(code: Pick<Code, "text" | "format" | "bytes"> | undefined, style?: QrStyle) {
-  const ink = useTheme((t) => colours(t).codeFg);
+export function useCodeUrl(code: Pick<Code, "text" | "format" | "bytes"> | undefined, style?: QrStyle, inkOverride?: string) {
+  const themeInk = useTheme((t) => colours(t).codeFg);
+  const ink = inkOverride ?? themeInk;
   const wallet = useTheme((t) => t.qrStyle);
   const s = style ?? wallet;
   const [url, setUrl] = useState<string>();
@@ -67,11 +68,11 @@ export function useCodeUrl(code: Pick<Code, "text" | "format" | "bytes"> | undef
   return url;
 }
 
-/** The code as an image. `vt` names it for view transitions, so it can grow from a card into a full page. */
-export function QrImage({ code, style, vt, className = "" }: { code: Pick<Code, "text" | "format" | "bytes">; style?: QrStyle; vt?: string; className?: string }) {
-  const url = useCodeUrl(code, style);
+/** The code as an image, in the theme's colours unless `ink`/`bg` say otherwise ("transparent" for a lit plate). */
+export function QrImage({ code, style, className = "", ink, bg }: { code: Pick<Code, "text" | "format" | "bytes">; style?: QrStyle; className?: string; ink?: string; bg?: string }) {
+  const url = useCodeUrl(code, style, ink);
   return (
-    <div className={`qr ${codeShape(code.format)} ${className}`} style={vt ? { viewTransitionName: vt } : undefined}>
+    <div className={`qr ${codeShape(code.format)} ${className}`} style={bg ? { background: bg } : undefined}>
       {url && <img src={url} alt="" draggable={false} />}
     </div>
   );

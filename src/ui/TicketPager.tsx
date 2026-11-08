@@ -3,12 +3,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isJourney } from "../categories";
 import type { Pass } from "../store/db";
 import { deletePass, markUsed, restore, updatePass } from "../store/passes";
-import { useTheme } from "../theme";
+import { colours, setTheme, useTheme } from "../theme";
 import { CodeView, useImageUrl } from "./CodeView";
 import { Crop } from "./Crop";
 import { Fields, fieldsOf } from "./Fields";
 import { longDate } from "./format";
-import { CategoryIcon, Close } from "./icons";
+import { Bright, CategoryIcon, Close } from "./icons";
 import { Postmark, postmarkDate } from "./Postmark";
 import { bitStrip, bytesOf, microline, serialOf } from "./print";
 import { QrImage } from "./qr";
@@ -49,7 +49,7 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
   const track = useRef<HTMLDivElement>(null);
   const start = Math.max(0, passes.findIndex((p) => p.id === startId));
   const [index, setIndex] = useState(start);
-  const [overlay, setOverlay] = useState<"details" | "plain" | "original" | "style" | "edit">();
+  const [overlay, setOverlay] = useState<"plain" | "original" | "style" | "edit">();
   const [stamping, setStamping] = useState<string>();
   const pass = passes[index] ?? passes[0];
 
@@ -108,20 +108,11 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
   }
 
   return (
-    <motion.div
-      className="fullscreen pager"
-      drag="y"
-      dragDirectionLock
-      dragConstraints={{ top: 0, bottom: 0 }}
-      dragElastic={{ top: 0, bottom: 0.6 }}
-      dragSnapToOrigin
-      onDragEnd={(_, info) => (info.offset.y > 120 || info.velocity.y > 700) && onClose()}
-      style={{ touchAction: "pan-x" }}
-    >
+    <div className="fullscreen pager">
       <div className="fs-bar">
         <button className="icon-btn" onClick={onClose} aria-label="Close"><Close /></button>
         <span className="kicker">{index + 1} / {passes.length}</span>
-        <button className="link" onClick={() => setOverlay("details")}>Details</button>
+        <BrightToggle />
       </div>
       <div
         className="pager-track"
@@ -135,28 +126,46 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
         }}
       >
         {passes.map((p, i) => (
-          <TicketPage key={p.id} pass={p} current={i === index} stamping={stamping === p.id} onUse={() => use(p)} onRestore={() => restoreIt(p)} onPlain={() => setOverlay("plain")} />
+          <TicketPage
+            key={p.id}
+            pass={p}
+            current={i === index}
+            stamping={stamping === p.id}
+            onUse={() => use(p)}
+            onRestore={() => restoreIt(p)}
+            onPlain={() => setOverlay("plain")}
+            onAction={(a) => (a === "share" ? share(p) : setOverlay(a))}
+            onPullClose={onClose}
+          />
         ))}
       </div>
 
       <AnimatePresence>
         {(overlay === "plain" || overlay === "original") && <PlainView pass={pass} original={overlay === "original"} onClose={() => setOverlay(undefined)} />}
-        {overlay === "details" && (
-          <Sheet key="details" onClose={() => setOverlay(undefined)}>
-            <Details pass={pass} onAction={(a) => (a === "share" ? share(pass) : setOverlay(a))} />
-          </Sheet>
-        )}
         {overlay === "edit" && (
           <Sheet key="edit" onClose={() => setOverlay(undefined)} full>
             <EditTicket pass={pass} onDone={() => setOverlay(undefined)} onDeleted={() => { setOverlay(undefined); onClose(); onToast("Deleted"); }} />
           </Sheet>
         )}
       </AnimatePresence>
-      {overlay === "style" && pass.codes[0] && (
-        <StyleForTicket pass={pass} onDone={() => setOverlay(undefined)} />
-      )}
-    </motion.div>
+      {overlay === "style" && pass.codes[0] && <StyleForTicket pass={pass} onDone={() => setOverlay(undefined)} />}
+    </div>
   );
+}
+
+/** Bright: the code goes on a lit white plate (an HDR video, which iPhones show brighter than white). */
+function BrightToggle() {
+  const bright = useTheme((t) => t.bright);
+  return (
+    <button className={`icon-btn bright${bright ? " on" : ""}`} onClick={() => setTheme({ bright: !bright })} aria-pressed={bright} aria-label="Bright code">
+      <Bright />
+    </button>
+  );
+}
+
+/** A tiny looping HDR (HLG) white video: on HDR iPhones it's lit brighter than UI white. */
+export function LitPlate() {
+  return <video className="lit-video" src={`${import.meta.env.BASE_URL}hdr/white-hlg.mp4`} autoPlay muted loop playsInline disablePictureInPicture aria-hidden />;
 }
 
 /** The card slides out of its stack before the ticket moves to the other list. */
@@ -182,7 +191,11 @@ function StyleForTicket({ pass, onDone }: { pass: Pass; onDone: () => void }) {
   );
 }
 
-function TicketPage({ pass, current, stamping, onUse, onRestore, onPlain }: { pass: Pass; current: boolean; stamping: boolean; onUse: () => void; onRestore: () => void; onPlain: () => void }) {
+type Action = "edit" | "style" | "share" | "original";
+
+function TicketPage({ pass, current, stamping, onUse, onRestore, onPlain, onAction, onPullClose }: {
+  pass: Pass; current: boolean; stamping: boolean; onUse: () => void; onRestore: () => void; onPlain: () => void; onAction: (a: Action) => void; onPullClose: () => void;
+}) {
   const t = ticketText(pass);
   const code = pass.codes[0];
   const bytes = code ? bytesOf(code.text, code.bytes) : new TextEncoder().encode(pass.title);
@@ -190,64 +203,100 @@ function TicketPage({ pass, current, stamping, onUse, onRestore, onPlain }: { pa
   const titleSize = pass.title.length > 26 ? "s" : pass.title.length > 16 ? "m" : "l";
   const micro = microline([pass.title, pass.date, pass.time, pass.from && `${pass.from}>${pass.to ?? ""}`, pass.seat, pass.place, t.info?.reference], code?.text ?? "");
   const source = useImageUrl(code ? undefined : pass.sourceId);
+  const bright = useTheme((s) => s.bright);
+  const plainInk = useTheme((s) => colours(s).plainInk);
+  const lit = bright && !!code && !pass.usedAt;
+  // Pull down at the top to close: iOS rubber-bands (scrollTop < 0); elsewhere, follow the finger.
+  const pull = useRef<{ y: number; done: boolean } | undefined>(undefined);
   return (
-    <section className="page">
-      <div className="ticket">
-        <header className="t-head">
-          <div className="t-kicker">
-            <span className="kicker"><CategoryIcon id={pass.category} size={16} /> {t.issuer}</span>
-            <span className="kicker">{t.day ?? "Undated"}</span>
-          </div>
-          <h2 className={`t-title serif ${titleSize}`}>{pass.title || "Untitled"}</h2>
-          <div className="t-when">
-            {pass.time && <span className="t-time">{pass.time}</span>}
-            <span className="t-sub">
-              {cd && <b>{cd}</b>}
-              {t.sub && <span>{t.sub}</span>}
-            </span>
-          </div>
-        </header>
+    <section
+      className="page"
+      onScroll={(e) => {
+        if (e.currentTarget.scrollTop < -72 && !pull.current?.done) {
+          pull.current = { y: 0, done: true };
+          onPullClose();
+        }
+      }}
+      onTouchStart={(e) => (pull.current = e.currentTarget.scrollTop <= 0 ? { y: e.touches[0].clientY, done: false } : undefined)}
+      onTouchMove={(e) => {
+        const p = pull.current;
+        if (p && !p.done && e.currentTarget.scrollTop <= 0 && e.touches[0].clientY - p.y > 110) {
+          p.done = true;
+          onPullClose();
+        }
+      }}
+    >
+      <div className="page-main">
+        <div className="ticket" style={current ? { viewTransitionName: vtName(pass.id) } : undefined}>
+          <header className="t-head">
+            <div className="t-kicker">
+              <span className="kicker"><CategoryIcon id={pass.category} size={16} /> {t.issuer}</span>
+              <span className="kicker">{t.day ?? "Undated"}</span>
+            </div>
+            <h2 className={`t-title serif ${titleSize}`}>{pass.title || "Untitled"}</h2>
+            <div className="t-when">
+              {pass.time && <span className="t-time">{pass.time}</span>}
+              <span className="t-sub">
+                {cd && <b>{cd}</b>}
+                {t.sub && <span>{t.sub}</span>}
+              </span>
+            </div>
+          </header>
 
-        <div className="tear" aria-hidden>
-          <i className="notch l" />
-          <span className="tear-micro">{micro}</span>
-          <i className="notch r" />
+          <div className="tear" aria-hidden>
+            <i className="notch l" />
+            <span className="tear-micro">{micro}</span>
+            <i className="notch r" />
+          </div>
+
+          <div className="t-code fit">
+            <Crop className="fit-box">
+              {code ? (
+                lit ? (
+                  <div className="lit">
+                    {current && <LitPlate />}
+                    <QrImage code={code} style={pass.style} ink={plainInk} bg="transparent" />
+                  </div>
+                ) : (
+                  <QrImage code={code} style={pass.style} />
+                )
+              ) : source ? (
+                <img className="t-image" src={source} alt="" />
+              ) : null}
+              <AnimatePresence>
+                {(pass.usedAt || stamping) && (
+                  <motion.div
+                    className="t-postmark"
+                    initial={stamping ? { opacity: 0, transform: "scale(1.35) rotate(-18deg)" } : false}
+                    animate={{ opacity: 1, transform: "scale(1) rotate(0deg)" }}
+                    transition={{ type: "spring", duration: 0.45, bounce: 0.25 }}
+                  >
+                    <Postmark date={postmarkDate(pass.usedAt ?? Date.now())} place={pass.from ?? pass.place} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Crop>
+          </div>
+
+          <footer className="t-foot">
+            <div className="t-bits" dangerouslySetInnerHTML={{ __html: bitStrip(bytes) }} />
+            <div className="t-serial">
+              <span>{serialOf(bytes)}</span>
+              <span>{code ? `${prettyFormat(code.format)} · ${bytes.length} B` : "Image"}{pass.codes.length > 1 ? ` · +${pass.codes.length - 1}` : ""}</span>
+            </div>
+          </footer>
         </div>
-
-        <div className="t-code fit">
-          <Crop className="fit-box">
-            {code ? <QrImage code={code} style={pass.style} vt={current ? vtName(pass.id) : undefined} /> : source ? <img className="t-image" src={source} alt="" /> : null}
-            <AnimatePresence>
-              {(pass.usedAt || stamping) && (
-                <motion.div
-                  className="t-postmark"
-                  initial={stamping ? { opacity: 0, transform: "scale(1.35) rotate(-18deg)" } : false}
-                  animate={{ opacity: 1, transform: "scale(1) rotate(0deg)" }}
-                  transition={{ type: "spring", duration: 0.45, bounce: 0.25 }}
-                >
-                  <Postmark date={postmarkDate(pass.usedAt ?? Date.now())} place={pass.from ?? pass.place} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Crop>
+        <div className="page-actions">
+          {pass.usedAt ? (
+            <button className="btn line wide-flex" onClick={onRestore}>Back to upcoming</button>
+          ) : (
+            <button className="btn solid wide-flex" onClick={onUse} disabled={stamping}>{stamping ? "Postmarked" : "Mark as used"}</button>
+          )}
+          <button className="btn line" onClick={onPlain} disabled={!code}>Plain</button>
         </div>
-
-        <footer className="t-foot">
-          <div className="t-bits" dangerouslySetInnerHTML={{ __html: bitStrip(bytes) }} />
-          <div className="t-serial">
-            <span>{serialOf(bytes)}</span>
-            <span>{code ? `${prettyFormat(code.format)} · ${bytes.length} B` : "Image"}{pass.codes.length > 1 ? ` · +${pass.codes.length - 1}` : ""}</span>
-          </div>
-        </footer>
+        <div className="more-hint kicker" aria-hidden>Details ↓</div>
       </div>
-      <div className="page-actions">
-        {pass.usedAt ? (
-          <button className="btn line wide-flex" onClick={onRestore}>Back to upcoming</button>
-        ) : (
-          <button className="btn solid wide-flex" onClick={onUse} disabled={stamping}>{stamping ? "Postmarked" : "Mark as used"}</button>
-        )}
-        <button className="btn line" onClick={onPlain} disabled={!code}>Plain</button>
-      </div>
+      <Details pass={pass} onAction={onAction} />
     </section>
   );
 }
@@ -257,6 +306,7 @@ function PlainView({ pass, original, onClose }: { pass: Pass; original: boolean;
   const source = useImageUrl(pass.sourceId);
   return (
     <motion.div className="plain" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={{ duration: 0.18 }} onClick={onClose}>
+      <LitPlate />
       {!original && code ? (
         <div className="plain-code"><CodeView code={code} /></div>
       ) : code?.cropId ? (
@@ -270,7 +320,7 @@ function PlainView({ pass, original, onClose }: { pass: Pass; original: boolean;
   );
 }
 
-function Details({ pass, onAction }: { pass: Pass; onAction: (a: "edit" | "style" | "share" | "original") => void }) {
+function Details({ pass, onAction }: { pass: Pass; onAction: (a: Action) => void }) {
   const t = ticketText(pass);
   const style = useTheme((s) => pass.style ?? s.qrStyle);
   const source = useImageUrl(pass.sourceId);
@@ -287,8 +337,8 @@ function Details({ pass, onAction }: { pass: Pass; onAction: (a: "edit" | "style
     for (const [k, v] of t.info.details) if (!["Text", "Date", "Route", "Seat"].includes(k)) facts.push([k, v]);
   }
   return (
-    <div className="sheet-pad">
-      <h3 className="sheet-h serif">{pass.title || "Untitled"}</h3>
+    <div className="page-more">
+      <h3 className="section">Details</h3>
       <dl className="facts">
         {facts.map(([k, v], i) => (
           <div key={k + i}><dt>{k}</dt><dd>{v}</dd></div>
