@@ -16,6 +16,7 @@ import { Settings } from "./ui/Settings";
 import { Sheet } from "./ui/Sheet";
 import { TicketPager } from "./ui/TicketPager";
 import { transition } from "./ui/vt";
+import { prepareCode } from "./ui/qr";
 import type { Pass } from "./store/db";
 
 type Tab = "upcoming" | "collected";
@@ -44,7 +45,9 @@ export function App() {
   const openList = open ? (open.list === "upcoming" ? upcoming : collected) : [];
   /** The card whose code morphs: the tapped one on the way in, the one showing on the way out. */
   const [named, setNamed] = useState<string>();
-  const openTicket = (list: Tab) => (p: Pass) => {
+  const openTicket = (list: Tab) => async (p: Pass) => {
+    // Wait (briefly) for the code to be ready, so it's in the picture from the first frame.
+    if (p.codes[0]) await Promise.race([prepareCode(p.codes[0], p.style), new Promise((r) => setTimeout(r, 250))]);
     flushSync(() => setNamed(p.id));
     transition(() => setOpen({ list, id: p.id, current: p.id }), "open");
   };
@@ -71,6 +74,20 @@ export function App() {
     setScanning(false);
     setSources([{ kind: "draft", draft }]);
   }, []);
+
+  // Draw every upcoming ticket's code in the background, nearest first.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const p of upcoming) {
+        if (cancelled) return;
+        if (p.codes[0]) await prepareCode(p.codes[0], p.style);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [upcoming]);
 
   useEffect(() => {
     loadPasses();

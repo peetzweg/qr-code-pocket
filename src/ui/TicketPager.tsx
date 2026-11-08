@@ -8,7 +8,7 @@ import { CodeView, useImageUrl } from "./CodeView";
 import { Crop } from "./Crop";
 import { Fields, fieldsOf } from "./Fields";
 import { longDate } from "./format";
-import { Bright, CategoryIcon, Close } from "./icons";
+import { Bright, Close } from "./icons";
 import { Postmark, postmarkDate } from "./Postmark";
 import { bitStrip, bytesOf, microline, serialOf } from "./print";
 import { QrImage } from "./qr";
@@ -16,7 +16,8 @@ import { QR_STYLES } from "./qrart";
 import { Sheet } from "./Sheet";
 import { ticketImage } from "./shareImage";
 import { StylePager } from "./StylePager";
-import { countdown, ticketText } from "./ticketText";
+import { TicketHead } from "./TicketHead";
+import { ticketText } from "./ticketText";
 import { prettyFormat } from "./format";
 import { vtName } from "./vt";
 
@@ -199,8 +200,6 @@ function TicketPage({ pass, current, stamping, onUse, onRestore, onPlain, onActi
   const t = ticketText(pass);
   const code = pass.codes[0];
   const bytes = code ? bytesOf(code.text, code.bytes) : new TextEncoder().encode(pass.title);
-  const cd = !pass.usedAt ? countdown(pass) : undefined;
-  const titleSize = pass.title.length > 26 ? "s" : pass.title.length > 16 ? "m" : "l";
   const micro = microline([pass.title, pass.date, pass.time, pass.from && `${pass.from}>${pass.to ?? ""}`, pass.seat, pass.place, t.info?.reference], code?.text ?? "");
   const source = useImageUrl(code ? undefined : pass.sourceId);
   const bright = useTheme((s) => s.bright);
@@ -228,20 +227,7 @@ function TicketPage({ pass, current, stamping, onUse, onRestore, onPlain, onActi
     >
       <div className="page-main">
         <div className="ticket" style={current ? { viewTransitionName: vtName(pass.id) } : undefined}>
-          <header className="t-head">
-            <div className="t-kicker">
-              <span className="kicker"><CategoryIcon id={pass.category} size={16} /> {t.issuer}</span>
-              <span className="kicker">{t.day ?? "Undated"}</span>
-            </div>
-            <h2 className={`t-title serif ${titleSize}`}>{pass.title || "Untitled"}</h2>
-            <div className="t-when">
-              {pass.time && <span className="t-time">{pass.time}</span>}
-              <span className="t-sub">
-                {cd && <b>{cd}</b>}
-                {t.sub && <span>{t.sub}</span>}
-              </span>
-            </div>
-          </header>
+          <TicketHead pass={pass} />
 
           <div className="tear" aria-hidden>
             <i className="notch l" />

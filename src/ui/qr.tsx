@@ -3,7 +3,7 @@ import { writeBarcode } from "zxing-wasm/full";
 import "../scan/zxing"; // points zxing at the bundled wasm
 import { codeSvg, isLinear, isStacked } from "../scan/zxing";
 import type { Code } from "../store/db";
-import { colours, useTheme } from "../theme";
+import { colours, getTheme, useTheme } from "../theme";
 import { matrixFrom, qrArt, type Matrix, type QrStyle } from "./qrart";
 
 const matrices = new Map<string, Promise<Matrix | undefined>>();
@@ -76,4 +76,24 @@ export function QrImage({ code, style, className = "", ink, bg }: { code: Pick<C
       {url && <img src={url} alt="" draggable={false} />}
     </div>
   );
+}
+
+/**
+ * Get a ticket's code drawn and decoded before it's needed (both the themed and the lit-plate
+ * variant), so it's already there when the ticket opens instead of popping in mid-transition.
+ */
+export function prepareCode(code: Pick<Code, "text" | "format" | "bytes">, style?: QrStyle): Promise<void> {
+  const t = getTheme();
+  const c = colours(t);
+  const s = style ?? t.qrStyle;
+  return Promise.all(
+    [c.codeFg, c.plainInk].map((ink) =>
+      codeUrl(code, s, ink).then((url) => {
+        if (!url) return;
+        const img = new Image();
+        img.src = url;
+        return img.decode().catch(() => {});
+      }),
+    ),
+  ).then(() => {});
 }
