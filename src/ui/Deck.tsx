@@ -1,4 +1,5 @@
 import type { Pass } from "../store/db";
+import { longDate, prettyFormat } from "./format";
 import { CategoryIcon } from "./icons";
 import { Postmark, postmarkDate } from "./Postmark";
 import { QrImage } from "./qr";
@@ -39,8 +40,8 @@ export function Deck({ passes, onOpen, named, used = false }: { passes: Pass[]; 
             </div>
             <div className="card-tear" aria-hidden />
             <div className="card-foot">
-              <span className="mono">{t.sub ?? t.cat.label}</span>
-              <span className="mono">{p.codes.length > 1 ? `${p.codes.length} codes` : t.info?.label ?? "Image"}</span>
+              <span className="mono">{t.sub ?? p.notes?.split("\n")[0] ?? (p.date ? longDate(p.date) : "Undated")}</span>
+              <span className="mono">{p.codes[0] ? `${prettyFormat(p.codes[0].format)}${p.codes.length > 1 ? ` ×${p.codes.length}` : ""}` : "Image"}</span>
             </div>
           </button>
         );
