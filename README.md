@@ -32,6 +32,14 @@ Research for later: [Live Activities](docs/research/live-activities.md),
 
 Several screenshots of one booking can be combined into one pass (one code per person).
 
+## Brand assets
+
+`public/favicon.svg` is the app icon (a real QR code in the liquid style, white on sumi, in the crop
+frame); every PNG icon and iOS launch screen is generated from it at build (`pwa-assets.config.ts`).
+`public/og.png` is the 1200 × 630 share image. Both are made by scripts in `scripts/brand/`. Set
+`SITE_URL` when building for a real domain so canonical, `og:url`, `og:image` and the sitemap get
+absolute URLs; without it those are left out.
+
 ## Run
 
 ```sh
