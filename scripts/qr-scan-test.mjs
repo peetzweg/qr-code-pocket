@@ -23,9 +23,9 @@ for (const style of QR_STYLES.map((s) => s.id)) {
   const res = [];
   for (const text of PAYLOADS) {
     const w = await writeBarcode(text, { format: "QRCode", options: "ecLevel=H", withQuietZones: false });
-    const svg = qrArt(matrixFrom(w.symbol), style, { bytes: new TextEncoder().encode(text), ink: process.env.INK ?? "#000" });
+    const svg = qrArt(matrixFrom(w.symbol), style, { bytes: new TextEncoder().encode(text), ink: process.env.INK ?? "#000", paper: process.env.PAPER });
     for (const px of SIZES) {
-      await page.setContent(`<body style="margin:0;background:#fff"><div id="c" style="display:inline-block;padding:12px;background:#fff;line-height:0">${svg.replace("<svg", `<svg width="${px}" height="${px}"`)}</div></body>`);
+      await page.setContent(`<body style="margin:0;background:#fff"><div id="c" style="display:inline-block;padding:12px;background:${process.env.PAPER ?? "#fff"};line-height:0">${svg.replace("<svg", `<svg width="${px}" height="${px}"`)}</div></body>`);
       const png = await page.locator("#c").screenshot();
       const out = await readBarcodes(new Uint8Array(png), { formats: ["QRCode"], tryHarder: false });
       res.push(out[0]?.text === text);

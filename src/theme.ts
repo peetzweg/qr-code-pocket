@@ -3,8 +3,9 @@ import type { QrStyle } from "./ui/qrart";
 
 /**
  * Two colours, always: the one you pick and white. "Ink on paper" puts your colour on white;
- * "inverted" floods the app with your colour and draws in white. Stamps are always your ink on white
- * paper, so codes keep the dark-on-light contrast scanners want.
+ * "inverted" floods the app with your colour and draws everything in white, the codes included
+ * (phone cameras read light-on-dark codes; "Plain" shows the classic dark-on-light one for fussy
+ * gate scanners).
  */
 export interface Theme {
   ink: string;
@@ -66,14 +67,18 @@ export function legible(hex: string) {
 }
 
 export function colours(t: Theme = store.get()) {
-  return { fg: t.inverted ? PAPER : t.ink, bg: t.inverted ? t.ink : PAPER, ink: t.ink, paper: PAPER };
+  const fg = t.inverted ? PAPER : t.ink;
+  const bg = t.inverted ? t.ink : PAPER;
+  return { fg, bg, ink: t.ink, paper: PAPER, codeFg: fg, codeBg: bg };
 }
 
 export function apply() {
-  const { fg, bg } = colours();
+  const { fg, bg, codeFg, codeBg } = colours();
   const root = document.documentElement.style;
   root.setProperty("--fg", fg);
   root.setProperty("--bg", bg);
+  root.setProperty("--code-fg", codeFg);
+  root.setProperty("--code-bg", codeBg);
   root.setProperty("--ink", store.get().ink);
   root.setProperty("--paper", PAPER);
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", bg));

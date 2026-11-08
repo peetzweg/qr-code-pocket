@@ -3,7 +3,7 @@ import { writeBarcode } from "zxing-wasm/full";
 import "../scan/zxing"; // points zxing at the bundled wasm
 import { codeSvg, isLinear, isStacked } from "../scan/zxing";
 import type { Code } from "../store/db";
-import { useTheme } from "../theme";
+import { colours, useTheme } from "../theme";
 import { matrixFrom, qrArt, type Matrix, type QrStyle } from "./qrart";
 
 const matrices = new Map<string, Promise<Matrix | undefined>>();
@@ -29,27 +29,30 @@ export const codeShape = (format: string) => (isQr(format) ? "square" : isLinear
 
 const urls = new Map<string, Promise<string | undefined>>();
 
+/** The code drawn in its style and colour as an SVG string (shared by the app and the share image). */
+export async function codeSvgArt(code: Pick<Code, "text" | "format" | "bytes">, style: QrStyle, ink: string): Promise<string | undefined> {
+  let svg: string | undefined;
+  if (isQr(code.format)) {
+    const m = await qrMatrix(code);
+    if (m) svg = qrArt(m, style, { ink, quiet: 1, bytes: code.bytes ? new Uint8Array(code.bytes) : new TextEncoder().encode(code.text) });
+  }
+  if (!svg) svg = (await codeSvg(code.format, code.text, code.bytes).catch(() => undefined))?.replace(/fill="#000000"/g, `fill="${ink}"`).replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+  return svg;
+}
+
 /** An object URL of the code drawn in its style and ink; crisp at any size, cached per variant. */
 function codeUrl(code: Pick<Code, "text" | "format" | "bytes">, style: QrStyle, ink: string): Promise<string | undefined> {
   const key = `${style}|${ink}|${code.format}|${code.text}`;
   let u = urls.get(key);
   if (!u) {
-    u = (async () => {
-      let svg: string | undefined;
-      if (isQr(code.format)) {
-        const m = await qrMatrix(code);
-        if (m) svg = qrArt(m, style, { ink, quiet: 1, bytes: code.bytes ? new Uint8Array(code.bytes) : new TextEncoder().encode(code.text) });
-      }
-      if (!svg) svg = (await codeSvg(code.format, code.text, code.bytes).catch(() => undefined))?.replace(/fill="#000000"/g, `fill="${ink}"`).replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
-      return svg && URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-    })();
+    u = codeSvgArt(code, style, ink).then((svg) => svg && URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" })));
     urls.set(key, u);
   }
   return u;
 }
 
 export function useCodeUrl(code: Pick<Code, "text" | "format" | "bytes"> | undefined, style?: QrStyle) {
-  const ink = useTheme((t) => t.ink);
+  const ink = useTheme((t) => colours(t).codeFg);
   const wallet = useTheme((t) => t.qrStyle);
   const s = style ?? wallet;
   const [url, setUrl] = useState<string>();

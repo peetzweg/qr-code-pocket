@@ -116,7 +116,7 @@ a { color: inherit; }
 .card-tear { position: absolute; left: 14px; right: 14px; top: var(--tear); border-top: var(--dash); }
 .card-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 16px; height: calc(var(--h) - var(--tear)); }
 .card-foot .mono { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.qr { background: var(--paper); }
+.qr { background: var(--code-bg); }
 .qr img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; }
 .qr.wide { aspect-ratio: 2.4; height: auto; }
 
@@ -157,7 +157,7 @@ a { color: inherit; }
 .fit-box { width: min(100cqw - 60px, 100cqh - 60px); aspect-ratio: 1; }
 .t-code { position: relative; }
 .t-image { width: 100%; height: 100%; object-fit: contain; filter: grayscale(1) contrast(1.4); mix-blend-mode: multiply; }
-.t-postmark { position: absolute; right: -6%; top: 6%; width: 64%; color: var(--ink); pointer-events: none; --paper-under: var(--paper); }
+.t-postmark { position: absolute; right: -6%; top: 6%; width: 64%; color: var(--fg); pointer-events: none; --paper-under: var(--bg); }
 .t-foot { padding: 0 16px 12px; flex: none; }
 .t-foot .t-bits { margin: 0 2px; }
 .t-bits { height: 14px; }
@@ -166,7 +166,7 @@ a { color: inherit; }
 .wide-flex { flex: 1; }
 .page-actions .btn { height: 52px; }
 
-/* The code always sits on paper, so it's ink on white even when the app is inverted. */
+/* The frame round the code: dashed edges and + registration marks. */
 /* --o: frame's distance from the code; --g: how far each dashed edge stops short of its corner. */
 .crop { --o: 10px; --g: 12px; position: relative; }
 .crop .qr { width: 100%; height: 100%; }

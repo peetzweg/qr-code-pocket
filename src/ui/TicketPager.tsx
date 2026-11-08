@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isJourney } from "../categories";
-import { codePng } from "../scan/zxing";
 import type { Pass } from "../store/db";
 import { deletePass, markUsed, restore, updatePass } from "../store/passes";
 import { useTheme } from "../theme";
@@ -15,6 +14,7 @@ import { bitStrip, bytesOf, microline, serialOf } from "./print";
 import { QrImage } from "./qr";
 import { QR_STYLES } from "./qrart";
 import { Sheet } from "./Sheet";
+import { ticketImage } from "./shareImage";
 import { StylePager } from "./StylePager";
 import { countdown, ticketText } from "./ticketText";
 import { prettyFormat } from "./format";
@@ -97,11 +97,9 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
   }
 
   async function share(p: Pass) {
-    const code = p.codes[0];
-    if (!code) return;
     try {
-      const png = await codePng(code.format, code.text, code.bytes);
-      const file = new File([png], `${(p.title || "ticket").replace(/[^\w\- ]+/g, "")}.png`, { type: "image/png" });
+      const png = await ticketImage(p);
+      const file = new File([png], `${(p.title || "ticket").replace(/[^\w\- ]+/g, "").trim() || "ticket"}.png`, { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: p.title });
       else Object.assign(document.createElement("a"), { href: URL.createObjectURL(file), download: file.name }).click();
     } catch {
@@ -304,7 +302,7 @@ function Details({ pass, onAction }: { pass: Pass; onAction: (a: "edit" | "style
         <button className="btn line" onClick={() => onAction("original")} disabled={!source && !code?.cropId}>Original</button>
       </div>
       <div className="btn-row">
-        <button className="btn line" onClick={() => onAction("share")} disabled={!code}>Share code</button>
+        <button className="btn line" onClick={() => onAction("share")}>Share ticket</button>
         <button className="btn line" onClick={() => onAction("edit")}>Edit</button>
       </div>
     </div>
