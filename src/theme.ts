@@ -2,37 +2,71 @@ import { createStore, useStore } from "./store";
 import type { QrStyle } from "./ui/qrart";
 
 /**
- * Two colours, always: the one you pick and white. "Ink on paper" puts your colour on white;
- * "inverted" floods the app with your colour and draws everything in white, the codes included
- * (phone cameras read light-on-dark codes; "Plain" shows the classic dark-on-light one for fussy
- * gate scanners).
+ * Two colours, always: one ink and one paper.
+ *
+ * - Appearance, Day or Night: the paper is white or black ("Auto" follows the phone).
+ * - Fill, Line or Flood: Line prints the ink as lines and type on the paper; Flood floods the page
+ *   with the ink and prints everything, the codes included, in the paper colour.
+ *
+ * Every colour has a day shade (dark enough on white) and a night shade (light enough on black), so
+ * all four combinations stay readable and scannable. "Plain" always shows the classic dark-on-white
+ * code for fussy gate scanners.
  */
+export type Appearance = "day" | "night" | "auto";
+export type Fill = "line" | "flood";
+
 export interface Theme {
-  ink: string;
-  inverted: boolean;
+  /** A palette id, or "own" for `custom`. */
+  colour: string;
+  custom?: string;
+  appearance: Appearance;
+  fill: Fill;
   qrStyle: QrStyle;
   onboarded: boolean;
 }
 
-export const PAPER = "#ffffff";
+export interface Swatch {
+  id: string;
+  kanji: string;
+  name: string;
+  day: string;
+  night: string;
+}
 
-export const PALETTE: { name: string; ink: string }[] = [
-  { name: "Ink", ink: "#0b0b0b" },
-  { name: "Marine", ink: "#1c3f94" },
-  { name: "Klein", ink: "#1f2bc4" },
-  { name: "Vermilion", ink: "#c0311f" },
-  { name: "Forest", ink: "#1e5b3c" },
-  { name: "Teal", ink: "#0f5c63" },
-  { name: "Aubergine", ink: "#4b2257" },
-  { name: "Rust", ink: "#8a3b12" },
+/** Omakase: the colours we picked. All hold at least 6:1 against their paper. */
+export const PALETTE: Swatch[] = [
+  { id: "sumi", kanji: "墨", name: "Sumi", day: "#111111", night: "#f0eee9" },
+  { id: "kon", kanji: "紺", name: "Kon", day: "#1c2f6e", night: "#a9b9f0" },
+  { id: "ai", kanji: "藍", name: "Ai", day: "#1c3f94", night: "#8fb0ff" },
+  { id: "ruri", kanji: "瑠璃", name: "Ruri", day: "#1f2bc4", night: "#9aa2ff" },
+  { id: "shu", kanji: "朱", name: "Shu", day: "#b8321d", night: "#ff8f75" },
+  { id: "beni", kanji: "紅", name: "Beni", day: "#a3123a", night: "#ff8aa5" },
+  { id: "matcha", kanji: "抹茶", name: "Matcha", day: "#3b5d1e", night: "#b9d98f" },
+  { id: "asagi", kanji: "浅葱", name: "Asagi", day: "#0f5c63", night: "#86d9d9" },
+  { id: "fuji", kanji: "藤", name: "Fuji", day: "#5b3d8f", night: "#c9b1f2" },
+  { id: "kuchiba", kanji: "朽葉", name: "Kuchiba", day: "#7a4a12", night: "#e8b670" },
 ];
 
+export const WHITE = "#ffffff";
+export const BLACK = "#0b0b0b";
+
 const KEY = "qrwallet.theme";
-const DEFAULT: Theme = { ink: "#0b0b0b", inverted: false, qrStyle: "liquid", onboarded: false };
+const DEFAULT: Theme = { colour: "sumi", appearance: "auto", fill: "line", qrStyle: "liquid", onboarded: false };
 
 function load(): Theme {
   try {
-    return { ...DEFAULT, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
+    const raw = JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    // Before Day/Night there was { ink, inverted }.
+    if (raw.ink && !raw.colour) {
+      const hit = PALETTE.find((p) => p.day.toLowerCase() === String(raw.ink).toLowerCase());
+      raw.colour = hit?.id ?? (raw.ink === "#1c3f94" ? "ai" : raw.ink === "#0b0b0b" ? "sumi" : "own");
+      if (raw.colour === "own") raw.custom = raw.ink;
+      raw.fill = raw.inverted ? "flood" : "line";
+      raw.appearance = "day";
+      delete raw.ink;
+      delete raw.inverted;
+    }
+    return { ...DEFAULT, ...raw };
   } catch {
     return DEFAULT;
   }
@@ -48,40 +82,73 @@ export function setTheme(patch: Partial<Theme>) {
   apply();
 }
 
-/** WCAG relative luminance and contrast against white; scanners and eyes both want ≥ 4.5. */
-export function contrastOnWhite(hex: string) {
-  const c = hex.replace("#", "").match(/../g)!.map((v) => {
-    const s = parseInt(v, 16) / 255;
+// ---------- colour maths ----------
+
+const hexToRgb = (h: string) => h.replace("#", "").match(/../g)!.map((v) => parseInt(v, 16));
+const rgbToHex = (c: number[]) => `#${c.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("")}`;
+function luminance(hex: string) {
+  const c = hexToRgb(hex).map((v) => {
+    const s = v / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   });
-  const L = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-  return 1.05 / (L + 0.05);
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+export function contrast(a: string, b: string) {
+  const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+}
+/** Mixes a colour toward `target` until it holds `ratio` against `against`. */
+function holdContrast(hex: string, against: string, target: string, ratio = 6) {
+  const from = hexToRgb(hex);
+  const to = hexToRgb(target);
+  for (let t = 0; t <= 1; t += 0.02) {
+    const c = rgbToHex(from.map((v, i) => v + (to[i] - v) * t));
+    if (contrast(c, against) >= ratio) return c;
+  }
+  return target;
 }
 
-/** Darkens a colour until it holds 4.5:1 on white. */
-export function legible(hex: string) {
-  let [r, g, b] = hex.replace("#", "").match(/../g)!.map((v) => parseInt(v, 16));
-  const out = () => `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
-  for (let i = 0; i < 40 && contrastOnWhite(out()) < 4.5; i++) [r, g, b] = [r * 0.92, g * 0.92, b * 0.92];
-  return out();
+/** A colour of your own, made to work by day and by night. */
+export function ownSwatch(hex: string): Swatch {
+  return { id: "own", kanji: "", name: "Own", day: holdContrast(hex, WHITE, BLACK), night: holdContrast(hex, BLACK, WHITE) };
 }
+
+export function swatchOf(t: Theme = store.get()): Swatch {
+  if (t.colour === "own" && t.custom) return ownSwatch(t.custom);
+  return PALETTE.find((p) => p.id === t.colour) ?? PALETTE[0];
+}
+
+const night = matchMedia("(prefers-color-scheme: dark)");
+export const isNight = (t: Theme = store.get()) => t.appearance === "night" || (t.appearance === "auto" && night.matches);
 
 export function colours(t: Theme = store.get()) {
-  const fg = t.inverted ? PAPER : t.ink;
-  const bg = t.inverted ? t.ink : PAPER;
-  return { fg, bg, ink: t.ink, paper: PAPER, codeFg: fg, codeBg: bg };
+  const sw = swatchOf(t);
+  const dark = isNight(t);
+  const paper = dark ? BLACK : WHITE;
+  const ink = dark ? sw.night : sw.day;
+  const fg = t.fill === "flood" ? paper : ink;
+  const bg = t.fill === "flood" ? ink : paper;
+  return { fg, bg, ink, paper, codeFg: fg, codeBg: bg, plainInk: sw.day, darkGround: luminance(bg) < 0.2 };
 }
 
 export function apply() {
-  const { fg, bg, codeFg, codeBg } = colours();
-  const root = document.documentElement.style;
-  root.setProperty("--fg", fg);
-  root.setProperty("--bg", bg);
-  root.setProperty("--code-fg", codeFg);
-  root.setProperty("--code-bg", codeBg);
-  root.setProperty("--ink", store.get().ink);
-  root.setProperty("--paper", PAPER);
+  const { fg, bg, ink, paper, codeFg, codeBg, plainInk, darkGround } = colours();
+  const root = document.documentElement;
+  const s = root.style;
+  s.setProperty("--fg", fg);
+  s.setProperty("--bg", bg);
+  s.setProperty("--ink", ink);
+  s.setProperty("--paper", paper);
+  s.setProperty("--code-fg", codeFg);
+  s.setProperty("--code-bg", codeBg);
+  s.setProperty("--plain-ink", plainInk);
+  root.classList.toggle("dark-ground", darkGround);
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", bg));
-  document.documentElement.classList.toggle("inverted", store.get().inverted);
 }
+night.addEventListener("change", () => {
+  if (store.get().appearance === "auto") {
+    store.set({});
+    apply();
+  }
+});
 apply();

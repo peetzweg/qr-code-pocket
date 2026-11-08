@@ -24,7 +24,7 @@ export function Onboarding() {
           ) : (
             <>
               <h1 className="serif-xl">Two colours.</h1>
-              <p className="lede">The whole wallet is printed in one ink and paper. Pick the ink.</p>
+              <p className="lede">The wallet is printed in one ink and one paper. Day or night paper; your colour as lines, or flooding the page.</p>
               <ColourPicker />
             </>
           )}

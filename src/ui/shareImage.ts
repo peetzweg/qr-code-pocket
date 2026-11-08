@@ -60,6 +60,25 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): strin
   });
 }
 
+/**
+ * Dashes between two marks (corners or notches) `inset` from each end: every dash `dash` long, the
+ * gaps evened out so the line starts and ends exactly one gap away from the marks.
+ */
+function dashed(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, inset: number, dash: number, gap: number) {
+  const L = Math.hypot(x2 - x1, y2 - y1);
+  const ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+  const span = L - 2 * inset;
+  const n = Math.max(1, Math.floor((span - gap) / (dash + gap)));
+  const g = (span - n * dash) / (n + 1);
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const a = inset + g + i * (dash + g);
+    ctx.moveTo(x1 + ux * a, y1 + uy * a);
+    ctx.lineTo(x1 + ux * (a + dash), y1 + uy * (a + dash));
+  }
+  ctx.stroke();
+}
+
 export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   const theme = getTheme();
   const { fg, bg, codeFg } = colours(theme);
@@ -128,14 +147,8 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
 
   // Tear line with notches and microprint.
   const tearY = y + 24;
-  ctx.save();
   ctx.lineWidth = 2;
-  ctx.setLineDash([14, 10]);
-  ctx.beginPath();
-  ctx.moveTo(X + 44, tearY);
-  ctx.lineTo(X + TW - 44, tearY);
-  ctx.stroke();
-  ctx.restore();
+  dashed(ctx, X, tearY, X + TW, tearY, 24, 30, 16);
   for (const [cx, start, end] of [[X, -Math.PI / 2, Math.PI / 2], [X + TW, Math.PI / 2, (3 * Math.PI) / 2]] as const) {
     ctx.fillStyle = bg;
     ctx.beginPath();
@@ -168,20 +181,13 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
     const svg = await codeSvgArt(code, pass.style ?? theme.qrStyle, codeFg);
     if (svg) ctx.drawImage(await loadSvg(svg, s), qx, qy, s, s);
   }
-  const o = 22, g = 30, arm = 15;
+  // Frame: + marks on the corners, dashes as long as a + is wide, evenly spaced between them.
+  const o = 22, arm = 15;
   ctx.lineWidth = 2;
-  ctx.save();
-  ctx.setLineDash([10, 8]);
-  ctx.beginPath();
   for (const [x1, y1, x2, y2] of [
-    [qx - o + g, qy - o, qx + s + o - g, qy - o], [qx - o + g, qy + s + o, qx + s + o - g, qy + s + o],
-    [qx - o, qy - o + g, qx - o, qy + s + o - g], [qx + s + o, qy - o + g, qx + s + o, qy + s + o - g],
-  ]) {
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-  }
-  ctx.stroke();
-  ctx.restore();
+    [qx - o, qy - o, qx + s + o, qy - o], [qx - o, qy + s + o, qx + s + o, qy + s + o],
+    [qx - o, qy - o, qx - o, qy + s + o], [qx + s + o, qy - o, qx + s + o, qy + s + o],
+  ]) dashed(ctx, x1, y1, x2, y2, arm, arm * 2, 16);
   ctx.beginPath();
   for (const [cx, cy] of [[qx - o, qy - o], [qx + s + o, qy - o], [qx - o, qy + s + o], [qx + s + o, qy + s + o]]) {
     ctx.moveTo(cx - arm, cy);

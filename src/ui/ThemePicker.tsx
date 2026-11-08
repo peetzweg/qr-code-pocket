@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Pass } from "../store/db";
-import { contrastOnWhite, legible, PALETTE, setTheme, useTheme } from "../theme";
+import { BLACK, isNight, ownSwatch, PALETTE, setTheme, useTheme, WHITE, type Appearance, type Swatch } from "../theme";
 import { Crop } from "./Crop";
 import { QrImage } from "./qr";
 
@@ -28,29 +28,50 @@ export function SampleCode() {
 }
 
 export function ColourPicker() {
-  const ink = useTheme((t) => t.ink);
-  const inverted = useTheme((t) => t.inverted);
-  const [custom, setCustom] = useState(ink);
-  const own = !PALETTE.some((p) => p.ink === ink);
+  const colour = useTheme((t) => t.colour);
+  const custom = useTheme((t) => t.custom);
+  const appearance = useTheme((t) => t.appearance);
+  const fill = useTheme((t) => t.fill);
+  const dark = useTheme((t) => isNight(t));
+  const [own, setOwn] = useState(custom ?? "#2a6f97");
+  const shade = (sw: Swatch) => (dark ? sw.night : sw.day);
+  const paper = dark ? BLACK : WHITE;
+  const ownSw = ownSwatch(own);
   return (
     <div className="picker">
-      <div className="swatches">
-        {PALETTE.map((p) => (
-          <button key={p.ink} className={`swatch${p.ink === ink ? " on" : ""}`} style={{ "--sw": p.ink } as React.CSSProperties} onClick={() => setTheme({ ink: p.ink })} aria-label={p.name}>
-            <i />
-            <span>{p.name}</span>
-          </button>
-        ))}
-        <label className={`swatch${own ? " on" : ""}`} style={{ "--sw": own ? ink : custom } as React.CSSProperties}>
-          <i />
-          <span>Own</span>
-          <input type="color" value={custom} onChange={(e) => { setCustom(e.target.value); setTheme({ ink: legible(e.target.value) }); }} />
-        </label>
+      <div className="picker-row">
+        <span className="kicker">Appearance</span>
+        <div className="seg3">
+          {(["day", "night", "auto"] as Appearance[]).map((a) => (
+            <button key={a} className={appearance === a ? "on" : ""} onClick={() => setTheme({ appearance: a })}>
+              {a === "day" ? "Day" : a === "night" ? "Night" : "Auto"}
+            </button>
+          ))}
+        </div>
       </div>
-      {own && contrastOnWhite(custom) < 4.5 && <p className="kicker">Darkened a little so codes still scan.</p>}
-      <div className="mode">
-        <button className={!inverted ? "on" : ""} onClick={() => setTheme({ inverted: false })}><span className="mode-chip paper" /> Ink on paper</button>
-        <button className={inverted ? "on" : ""} onClick={() => setTheme({ inverted: true })}><span className="mode-chip ink" /> Paper on ink</button>
+      <div className="picker-row">
+        <span className="kicker">Fill</span>
+        <div className="seg3 two">
+          <button className={fill === "line" ? "on" : ""} onClick={() => setTheme({ fill: "line" })}><span className="mode-chip line" /> Line</button>
+          <button className={fill === "flood" ? "on" : ""} onClick={() => setTheme({ fill: "flood" })}><span className="mode-chip flood" /> Flood</button>
+        </div>
+      </div>
+      <div className="picker-row">
+        <span className="kicker">Omakase</span>
+        <div className="swatches">
+          {PALETTE.map((sw) => (
+            <button key={sw.id} className={`swatch${colour === sw.id ? " on" : ""}`} style={{ "--sw": shade(sw), "--sw-paper": paper } as React.CSSProperties} onClick={() => setTheme({ colour: sw.id })} aria-label={sw.name}>
+              <b>{sw.kanji}</b>
+              <span>{sw.name}</span>
+            </button>
+          ))}
+          <label className={`swatch own${colour === "own" ? " on" : ""}`} style={{ "--sw": shade(ownSw), "--sw-paper": paper } as React.CSSProperties}>
+            <b>+</b>
+            <span>Own</span>
+            <input type="color" value={own} onChange={(e) => { setOwn(e.target.value); setTheme({ colour: "own", custom: e.target.value }); }} />
+          </label>
+        </div>
+        {colour === "own" && <p className="kicker">Your colour, with a day and a night shade that keep codes scannable.</p>}
       </div>
     </div>
   );
