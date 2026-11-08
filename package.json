@@ -1,0 +1,40 @@
+{
+  "name": "kippu",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Kippu (切符): a wallet for the QR codes you collect while travelling. Import screenshots, PDFs or scan; keep them in one place; stamp them when used.",
+  "license": "MIT",
+  "author": "peetzweg <phil.czek@gmail.com>",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "node scripts/ocr-assets.mjs && tsc -b && vite build",
+    "serve": "node server.mjs",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@phosphor-icons/react": "^2.1.10",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/jpn": "^1.0.0",
+    "idb": "^8.0.4",
+    "motion": "^14.10.1",
+    "pdfjs-dist": "^6.5.438",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tesseract.js": "^7.0.0",
+    "zxing-wasm": "^3.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vite-pwa/assets-generator": "^2.0.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vite-plugin-pwa": "^2.0.0",
+    "workbox-window": "^7.4.1"
+  }
+}

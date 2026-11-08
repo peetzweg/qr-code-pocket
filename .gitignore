@@ -1,0 +1,11 @@
+node_modules
+dist
+*.local
+.DS_Store
+dev-dist
+*.tsbuildinfo
+public/ocr
+public/pdfjs
+inbox
+public/Add-to-Kippu.shortcut
+public/qr-test.html
