@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { flushSync } from "react-dom";
 import { inboxAvailable, takeInbox } from "./inbox";
 import { draftFromText, type Draft } from "./scan/importer";
 import { loadPasses, usePasses, walletOrder } from "./store/passes";
@@ -15,7 +14,6 @@ import { Scanner } from "./ui/Scanner";
 import { Settings } from "./ui/Settings";
 import { Sheet } from "./ui/Sheet";
 import { TicketPager } from "./ui/TicketPager";
-import { transition } from "./ui/vt";
 import { prepareCode } from "./ui/qr";
 import type { Pass } from "./store/db";
 
@@ -43,22 +41,13 @@ export function App() {
   const upcoming = useMemo(() => passes.filter((p) => !p.usedAt).sort(walletOrder), [passes]);
   const collected = useMemo(() => passes.filter((p) => p.usedAt).sort(byUsed), [passes]);
   const openList = open ? (open.list === "upcoming" ? upcoming : collected) : [];
-  /** The card whose code morphs: the tapped one on the way in, the one showing on the way out. */
-  const [named, setNamed] = useState<string>();
   const openTicket = (list: Tab) => async (p: Pass) => {
-    // Wait (briefly) for the code to be ready, so it's in the picture from the first frame.
+    if (open) return;
+    // Wait (briefly) for the code to be ready, so it's there from the first frame.
     if (p.codes[0]) await Promise.race([prepareCode(p.codes[0], p.style), new Promise((r) => setTimeout(r, 250))]);
-    flushSync(() => setNamed(p.id));
-    transition(() => setOpen({ list, id: p.id, current: p.id }), "open");
+    setOpen({ list, id: p.id, current: p.id });
   };
-  const closeTicket = useCallback(() => {
-    transition(() => {
-      setOpen((o) => {
-        if (o) setNamed(o.current);
-        return undefined;
-      });
-    }, "close");
-  }, []);
+  const closeTicket = useCallback(() => setOpen(undefined), []);
 
   const showToast = useCallback((msg: string, undo?: () => void) => {
     const id = Date.now();
@@ -167,14 +156,14 @@ export function App() {
         {loaded &&
           (tab === "upcoming" ? (
             upcoming.length ? (
-              <Deck passes={upcoming} onOpen={openTicket("upcoming")} named={open ? undefined : named} />
+              <Deck passes={upcoming} onOpen={openTicket("upcoming")} />
             ) : (
               <Empty onAdd={() => setAdding(true)} />
             )
           ) : collected.length ? (
             <>
               <Stats passes={collected} />
-              <Deck passes={collected} onOpen={openTicket("collected")} named={open ? undefined : named} used />
+              <Deck passes={collected} onOpen={openTicket("collected")} used />
             </>
           ) : (
             <p className="lede empty-note">Mark a ticket as used and it's postmarked and kept here, so the trip stays with you.</p>

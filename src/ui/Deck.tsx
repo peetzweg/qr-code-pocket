@@ -3,14 +3,13 @@ import { longDate, prettyFormat } from "./format";
 import { Postmark, postmarkDate } from "./Postmark";
 import { TicketHead } from "./TicketHead";
 import { ticketText } from "./ticketText";
-import { vtName } from "./vt";
 
 /**
  * Tickets as a stack, like a wallet: each shows its top band (what, when, where) down to the tear
- * line, where the next one lies on it. No code here: a card is for reading. Tap it and the card itself
- * unfolds into the full ticket (it shares a view-transition name with the ticket).
+ * line, where the next one lies on it. No code here: a card is for reading. Tap it and the full
+ * ticket grows out of it (cardMotion.ts).
  */
-export function Deck({ passes, onOpen, named, used = false }: { passes: Pass[]; onOpen: (p: Pass) => void; named?: string; used?: boolean }) {
+export function Deck({ passes, onOpen, used = false }: { passes: Pass[]; onOpen: (p: Pass) => void; used?: boolean }) {
   return (
     <div className="deck">
       {passes.map((p, i) => {
@@ -20,7 +19,7 @@ export function Deck({ passes, onOpen, named, used = false }: { passes: Pass[]; 
             key={p.id}
             data-pass={p.id}
             className={`card${used ? " used" : ""}`}
-            style={{ zIndex: i, viewTransitionName: named === p.id ? vtName(p.id) : undefined }}
+            style={{ zIndex: i }}
             onClick={() => onOpen(p)}
           >
             <TicketHead pass={p} showCountdown={!used && i === 0} />

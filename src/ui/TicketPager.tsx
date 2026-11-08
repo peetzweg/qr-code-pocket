@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { animateClose, animateOpen, cardHead } from "./cardMotion";
 import { isJourney } from "../categories";
 import type { Pass } from "../store/db";
 import { deletePass, markUsed, restore, updatePass } from "../store/passes";
@@ -19,7 +20,6 @@ import { StylePager } from "./StylePager";
 import { TicketHead } from "./TicketHead";
 import { ticketText } from "./ticketText";
 import { prettyFormat } from "./format";
-import { vtName } from "./vt";
 
 function useWakeLock() {
   useEffect(() => {
@@ -36,29 +36,48 @@ function useWakeLock() {
 }
 
 /**
- * The tickets, full screen, one per page: flick sideways through them like a wallet. The open
- * ticket's code carries the same view-transition name as its card, so it grows out of the stack.
+ * The tickets, full screen, one per page: flick sideways through them like a wallet. It opens out of
+ * the tapped card and closes back into the card of whichever ticket is showing (see cardMotion.ts).
  */
-export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
+export function TicketPager({ passes, startId, onCurrent, onClose: onClosed, onToast }: {
   passes: Pass[];
   startId: string;
   onCurrent: (id: string) => void;
+  /** Called once the close animation has finished. */
   onClose: () => void;
   onToast: (msg: string, undo?: () => void) => void;
 }) {
   useWakeLock();
+  const root = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
+  const closing = useRef(false);
+  const currentTicket = () => track.current?.children[indexRef.current]?.querySelector<HTMLElement>(".ticket") ?? null;
+  const indexRef = useRef(0);
   const start = Math.max(0, passes.findIndex((p) => p.id === startId));
   const [index, setIndex] = useState(start);
   const [overlay, setOverlay] = useState<"plain" | "original" | "style" | "edit">();
   const [stamping, setStamping] = useState<string>();
   const pass = passes[index] ?? passes[0];
+  indexRef.current = index;
 
+  // Open: scroll to the tapped ticket, then grow it out of its card, all before the first paint.
   useLayoutEffect(() => {
     const el = track.current;
     if (el) el.scrollLeft = start * el.clientWidth;
+    const t = currentTicket();
+    if (root.current && t) animateOpen(root.current, t, cardHead(startId));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Fold the showing ticket back into its card, then unmount. */
+  const onClose = useCallback(async () => {
+    if (closing.current || !root.current) return;
+    closing.current = true;
+    const p = passes[indexRef.current];
+    await animateClose(root.current, currentTicket(), p ? cardHead(p.id, true) : undefined);
+    onClosed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passes, onClosed]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (overlay) return;
@@ -69,8 +88,6 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
     return () => removeEventListener("keydown", onKey);
   }, [overlay, onClose]);
 
-  // Whatever page is showing names its code for view transitions; keep the deck in step so no two
-  // elements ever share a name (the list can shrink under us when a ticket is used or restored).
   useEffect(() => {
     if (pass) onCurrent(pass.id);
   }, [pass?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -81,17 +98,15 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
     setStamping(p.id);
     navigator.vibrate?.([12, 40, 18]);
     await new Promise((r) => setTimeout(r, 900));
-    // Close first (the code flies back to its card), then move the ticket to Collected.
-    onClose();
-    await new Promise((r) => setTimeout(r, 460));
+    // Close first (back into its card), then move the ticket to Collected.
+    await onClose();
     await leave(p.id);
     await markUsed(p.id);
     onToast(`${p.title || "Ticket"} moved to Collected`, () => restore(p.id));
   }
 
   async function restoreIt(p: Pass) {
-    onClose();
-    await new Promise((r) => setTimeout(r, 460));
+    await onClose();
     await leave(p.id);
     await restore(p.id);
     onToast(`${p.title || "Ticket"} is back in Upcoming`);
@@ -109,9 +124,10 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
   }
 
   return (
-    <div className="fullscreen pager">
+    <div className="fullscreen pager" ref={root}>
+      <div className="pager-bg" aria-hidden />
       <div className="fs-bar">
-        <button className="icon-btn" onClick={onClose} aria-label="Close"><Close /></button>
+        <button className="icon-btn" onClick={() => void onClose()} aria-label="Close"><Close /></button>
         <span className="kicker">{index + 1} / {passes.length}</span>
         <BrightToggle />
       </div>
@@ -226,7 +242,7 @@ function TicketPage({ pass, current, stamping, onUse, onRestore, onPlain, onActi
       }}
     >
       <div className="page-main">
-        <div className="ticket" style={current ? { viewTransitionName: vtName(pass.id) } : undefined}>
+        <div className="ticket">
           <TicketHead pass={pass} />
 
           <div className="tear" aria-hidden>

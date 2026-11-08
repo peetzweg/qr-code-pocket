@@ -135,6 +135,9 @@ a { color: inherit; }
 
 /* ---------- Full screen: the ticket, and the style pager ---------- */
 .fullscreen { position: fixed; inset: 0; z-index: 30; background: var(--bg); color: var(--fg); display: flex; flex-direction: column; }
+/* The pager's backdrop is its own layer so it can fade while the ticket grows out of its card. */
+.pager { background: none; }
+.pager-bg { position: absolute; inset: 0; z-index: -1; background: var(--bg); }
 .fs-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: calc(var(--safe-top) + 6px) 12px 4px; flex: none; }
 .fs-bar > :last-child { justify-self: end; }
 .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; }
@@ -218,28 +221,6 @@ a { color: inherit; }
 .fs-foot { padding: 4px 18px calc(var(--safe-bottom) + 14px); flex: none; }
 .fs-foot .btn.wide { margin-top: 4px; }
 
-/*
- * Open and close, like Wallet: the ticket is one solid object. Its head is identical on the card and
- * on the ticket, so the group just moves and changes height (drawer curve) with its contents clipped
- * and a border drawn round the moving box: opening, the ticket (new picture, pinned to the top) is
- * revealed downward; closing, the ticket (old picture) is folded back up into the card. No crossfade
- * of two layouts. The stack slides down and fades as the ticket opens, and comes back as it closes.
- */
-::view-transition-group(*) { animation-duration: 440ms; animation-timing-function: var(--ease-drawer); overflow: clip; outline: 1px solid var(--fg); outline-offset: -1px; }
-::view-transition-group(root) { outline: none; overflow: visible; }
-::view-transition-old(*), ::view-transition-new(*) { animation: none; height: auto; mix-blend-mode: normal; }
-html[data-vt="open"]::view-transition-old(*) { opacity: 0; }
-html[data-vt="close"]::view-transition-new(*) { opacity: 0; }
-html[data-vt="close"]::view-transition-old(*) { opacity: 1; }
-::view-transition-old(root), ::view-transition-new(root) { opacity: 1; height: 100%; }
-html[data-vt="open"]::view-transition-old(root) { animation: stack-away 360ms var(--ease-out) both; }
-html[data-vt="open"]::view-transition-new(root) { animation: vt-in 220ms var(--ease-out) 60ms both; }
-html[data-vt="close"]::view-transition-old(root) { z-index: 1; animation: vt-out 200ms var(--ease-out) both; }
-html[data-vt="close"]::view-transition-new(root) { animation: stack-back 380ms var(--ease-drawer) both; }
-@keyframes stack-away { to { opacity: 0; transform: translateY(36px); } }
-@keyframes stack-back { from { opacity: 0; transform: translateY(36px); } }
-@keyframes vt-out { to { opacity: 0; } }
-@keyframes vt-in { from { opacity: 0; } }
 
 /* ---------- Sheets ---------- */
 .overlay { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; justify-content: flex-end; }
