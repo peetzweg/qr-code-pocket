@@ -148,7 +148,7 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   // Tear line with notches and microprint.
   const tearY = y + 24;
   ctx.lineWidth = 2;
-  dashed(ctx, X, tearY, X + TW, tearY, 24, 30, 16);
+  dashed(ctx, X, tearY, X + TW, tearY, 24, 15, 11);
   for (const [cx, start, end] of [[X, -Math.PI / 2, Math.PI / 2], [X + TW, Math.PI / 2, (3 * Math.PI) / 2]] as const) {
     ctx.fillStyle = bg;
     ctx.beginPath();
@@ -181,13 +181,13 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
     const svg = await codeSvgArt(code, pass.style ?? theme.qrStyle, codeFg);
     if (svg) ctx.drawImage(await loadSvg(svg, s), qx, qy, s, s);
   }
-  // Frame: + marks on the corners, dashes as long as a + is wide, evenly spaced between them.
+  // Frame: + marks on the corners, dashes half as long as a + is wide, evenly spaced between them.
   const o = 22, arm = 15;
   ctx.lineWidth = 2;
   for (const [x1, y1, x2, y2] of [
     [qx - o, qy - o, qx + s + o, qy - o], [qx - o, qy + s + o, qx + s + o, qy + s + o],
     [qx - o, qy - o, qx - o, qy + s + o], [qx + s + o, qy - o, qx + s + o, qy + s + o],
-  ]) dashed(ctx, x1, y1, x2, y2, arm, arm * 2, 16);
+  ]) dashed(ctx, x1, y1, x2, y2, arm, arm, 11);
   ctx.beginPath();
   for (const [cx, cy] of [[qx - o, qy - o], [qx + s + o, qy - o], [qx - o, qy + s + o], [qx + s + o, qy + s + o]]) {
     ctx.moveTo(cx - arm, cy);
