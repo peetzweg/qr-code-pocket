@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 import { inboxAvailable, takeInbox } from "./inbox";
 import { draftFromText, type Draft } from "./scan/importer";
 import { loadPasses, usePasses, walletOrder } from "./store/passes";
@@ -41,8 +42,20 @@ export function App() {
   const upcoming = useMemo(() => passes.filter((p) => !p.usedAt).sort(walletOrder), [passes]);
   const collected = useMemo(() => passes.filter((p) => p.usedAt).sort(byUsed), [passes]);
   const openList = open ? (open.list === "upcoming" ? upcoming : collected) : [];
-  const openTicket = (list: Tab) => (p: Pass) => transition(() => setOpen({ list, id: p.id, current: p.id }));
-  const closeTicket = useCallback(() => transition(() => setOpen(undefined)), []);
+  /** The card whose code morphs: the tapped one on the way in, the one showing on the way out. */
+  const [named, setNamed] = useState<string>();
+  const openTicket = (list: Tab) => (p: Pass) => {
+    flushSync(() => setNamed(p.id));
+    transition(() => setOpen({ list, id: p.id, current: p.id }), "open");
+  };
+  const closeTicket = useCallback(() => {
+    transition(() => {
+      setOpen((o) => {
+        if (o) setNamed(o.current);
+        return undefined;
+      });
+    }, "close");
+  }, []);
 
   const showToast = useCallback((msg: string, undo?: () => void) => {
     const id = Date.now();
@@ -137,14 +150,14 @@ export function App() {
         {loaded &&
           (tab === "upcoming" ? (
             upcoming.length ? (
-              <Deck passes={upcoming} onOpen={openTicket("upcoming")} hidden={open?.current} />
+              <Deck passes={upcoming} onOpen={openTicket("upcoming")} named={open ? undefined : named} />
             ) : (
               <Empty onAdd={() => setAdding(true)} />
             )
           ) : collected.length ? (
             <>
               <Stats passes={collected} />
-              <Deck passes={collected} onOpen={openTicket("collected")} hidden={open?.current} used />
+              <Deck passes={collected} onOpen={openTicket("collected")} named={open ? undefined : named} used />
             </>
           ) : (
             <p className="lede empty-note">Mark a ticket as used and it's postmarked and kept here, so the trip stays with you.</p>

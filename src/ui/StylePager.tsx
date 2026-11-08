@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Code } from "../store/db";
 import { Crop } from "./Crop";
 import { Close } from "./icons";
@@ -10,7 +10,7 @@ export function StyleTrack({ code, value, onChange }: { code: Pick<Code, "text" 
   const track = useRef<HTMLDivElement>(null);
   const start = Math.max(0, QR_STYLES.findIndex((s) => s.id === value));
   const [index, setIndex] = useState(start);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = track.current;
     if (el) el.scrollLeft = start * el.clientWidth;
     // eslint-disable-next-line react-hooks/exhaustive-deps

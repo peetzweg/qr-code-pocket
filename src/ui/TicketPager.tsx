@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isJourney } from "../categories";
 import { codePng } from "../scan/zxing";
 import type { Pass } from "../store/db";
@@ -53,7 +53,7 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
   const [stamping, setStamping] = useState<string>();
   const pass = passes[index] ?? passes[0];
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = track.current;
     if (el) el.scrollLeft = start * el.clientWidth;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,14 +82,16 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
     await new Promise((r) => setTimeout(r, 900));
     // Close first (the code flies back to its card), then move the ticket to Collected.
     onClose();
-    await new Promise((r) => setTimeout(r, 480));
+    await new Promise((r) => setTimeout(r, 460));
+    await leave(p.id);
     await markUsed(p.id);
     onToast(`${p.title || "Ticket"} moved to Collected`, () => restore(p.id));
   }
 
   async function restoreIt(p: Pass) {
     onClose();
-    await new Promise((r) => setTimeout(r, 480));
+    await new Promise((r) => setTimeout(r, 460));
+    await leave(p.id);
     await restore(p.id);
     onToast(`${p.title || "Ticket"} is back in Upcoming`);
   }
@@ -157,6 +159,13 @@ export function TicketPager({ passes, startId, onCurrent, onClose, onToast }: {
       )}
     </motion.div>
   );
+}
+
+/** The card slides out of its stack before the ticket moves to the other list. */
+async function leave(id: string) {
+  const el = document.querySelector<HTMLElement>(`[data-pass="${CSS.escape(id)}"]`);
+  if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  await el.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(28px)" }], { duration: 220, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "forwards" }).finished.catch(() => {});
 }
 
 function StyleForTicket({ pass, onDone }: { pass: Pass; onDone: () => void }) {

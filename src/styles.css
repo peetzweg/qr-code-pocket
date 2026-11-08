@@ -85,28 +85,30 @@ a { color: inherit; }
 /* ---------- Deck: tickets stacked like a wallet ---------- */
 .deck { padding: 18px 14px calc(var(--safe-bottom) + 60px); display: flex; flex-direction: column; }
 .card {
-  --tear: 112px;
-  position: relative; display: flex; flex-direction: column; width: 100%; height: 196px; text-align: left;
+  --tear: 104px;
+  --h: 148px;
+  position: relative; display: flex; flex-direction: column; width: 100%; height: var(--h); text-align: left;
   background: var(--bg); border: var(--rule);
   /* Notches at the tear line, cut out of both edges. */
   -webkit-mask: radial-gradient(circle 9px at 0 var(--tear), #0000 8.5px, #000 9px) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% var(--tear), #0000 8.5px, #000 9px) right / 51% 100% no-repeat;
   mask: radial-gradient(circle 9px at 0 var(--tear), #0000 8.5px, #000 9px) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% var(--tear), #0000 8.5px, #000 9px) right / 51% 100% no-repeat;
   transition: transform 160ms var(--ease-out);
 }
-.card + .card { margin-top: calc(var(--tear) - 196px - 1px); }
+.card + .card { margin-top: calc(var(--tear) - var(--h) - 1px); }
 .card:active { transform: scale(0.985); }
 .card.used { border-style: dashed; }
-.card-head { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 14px 14px 0 16px; height: var(--tear); position: relative; }
+.card-head { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 14px; padding: 14px 14px 0 16px; height: var(--tear); position: relative; }
 .card-text { display: flex; flex-direction: column; min-width: 0; }
 .card-title { font: 400 25px/1.05 var(--serif); font-optical-sizing: auto; letter-spacing: -0.015em; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-sub { font-size: 13px; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-sub b { font-weight: 600; font-variant-numeric: tabular-nums; }
-.card-qr { width: 78px; height: 78px; flex: none; background: var(--paper); padding: 4px; }
+.card-qr { width: 76px; height: 76px; flex: none; }
 .card-qr.none { display: grid; place-items: center; border: var(--dash); background: none; }
 .card-postmark { position: absolute; right: 46px; top: 6px; width: 110px; color: var(--fg); pointer-events: none; --paper-under: var(--bg); }
 .card-tear { position: absolute; left: 12px; right: 12px; top: var(--tear); border-top: var(--dash); }
-.card-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 12px; padding: 0 16px 14px; }
+.card-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 16px; height: calc(var(--h) - var(--tear)); }
 .card-foot .mono { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qr { background: var(--paper); }
 .qr img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; }
 .qr.wide { aspect-ratio: 2.4; height: auto; }
 
@@ -152,7 +154,7 @@ a { color: inherit; }
 .page-actions .btn { height: 52px; }
 
 /* The code always sits on paper, so it's ink on white even when the app is inverted. */
-.crop { position: relative; background: var(--paper); outline: 1px dashed var(--fg); outline-offset: 8px; }
+.crop { position: relative; outline: 1px dashed var(--fg); outline-offset: 8px; }
 .crop .qr { width: 100%; height: 100%; }
 .crop .x { position: absolute; width: 11px; height: 11px; }
 .crop .x::before, .crop .x::after { content: ""; position: absolute; left: 50%; top: 50%; width: 11px; height: 1px; background: var(--fg); }
@@ -172,10 +174,17 @@ a { color: inherit; }
 
 /* View transitions: the code grows from its card into the ticket and back. */
 ::view-transition-group(*) { animation-duration: 420ms; animation-timing-function: var(--ease-drawer); }
-/* The code is the same picture before and after: no crossfade, it just moves and scales. */
-::view-transition-old(*), ::view-transition-new(*) { animation: none; mix-blend-mode: normal; height: 100%; }
-::view-transition-old(root) { animation: vt-out 200ms ease both; }
-::view-transition-new(root) { animation: vt-in 260ms ease both; }
+/*
+ * The code is the identical picture in the card and on the ticket, so only the new snapshot is
+ * shown and it simply moves and scales; no crossfade, no double image.
+ */
+::view-transition-old(*) { animation: none; opacity: 0; }
+::view-transition-new(*) { animation: none; mix-blend-mode: normal; width: 100%; height: 100%; }
+/* The screens: the one underneath stays put, the full-screen ticket fades over it (and back). */
+::view-transition-old(root) { animation: none; opacity: 1; }
+::view-transition-new(root) { animation: vt-in 200ms var(--ease-out) both; }
+html[data-vt="close"]::view-transition-old(root) { z-index: 1; animation: vt-out 200ms var(--ease-out) both; }
+html[data-vt="close"]::view-transition-new(root) { animation: none; }
 @keyframes vt-out { to { opacity: 0; } }
 @keyframes vt-in { from { opacity: 0; } }
 

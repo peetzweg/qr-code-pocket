@@ -9,14 +9,15 @@ import { vtName } from "./vt";
  * Tickets as a stack, like a wallet: each one shows its top band down to the tear line, where the
  * next one lies on it. The code sits in the corner; tap and it grows into the full ticket.
  */
-export function Deck({ passes, onOpen, hidden, used = false }: { passes: Pass[]; onOpen: (p: Pass) => void; hidden?: string; used?: boolean }) {
+/** `named`: the one card whose code takes part in the view transition (all others must not, or they float above it). */
+export function Deck({ passes, onOpen, named, used = false }: { passes: Pass[]; onOpen: (p: Pass) => void; named?: string; used?: boolean }) {
   return (
     <div className="deck">
       {passes.map((p, i) => {
         const t = ticketText(p);
         const cd = !used && i === 0 ? countdown(p) : undefined;
         return (
-          <button key={p.id} className={`card${used ? " used" : ""}`} style={{ zIndex: i }} onClick={() => onOpen(p)}>
+          <button key={p.id} data-pass={p.id} className={`card${used ? " used" : ""}`} style={{ zIndex: i }} onClick={() => onOpen(p)}>
             <div className="card-head">
               <div className="card-text">
                 <span className="kicker">
@@ -30,7 +31,7 @@ export function Deck({ passes, onOpen, hidden, used = false }: { passes: Pass[];
                 </span>
               </div>
               {p.codes[0] ? (
-                <QrImage code={p.codes[0]} style={p.style} vt={hidden === p.id ? undefined : vtName(p.id)} className="card-qr" />
+                <QrImage code={p.codes[0]} style={p.style} vt={named === p.id ? vtName(p.id) : undefined} className="card-qr" />
               ) : (
                 <div className="card-qr none"><CategoryIcon id={p.category} size={28} /></div>
               )}
