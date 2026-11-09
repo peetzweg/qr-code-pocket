@@ -11,7 +11,7 @@ export function Onboarding() {
   return (
     <div className="onboarding">
       <div className="ob-top">
-        <span>QR Code Wallet</span>
+        <span>QR Code Pocket</span>
         <span className="kicker">{step + 1} / 3</span>
       </div>
       {step < 2 ? (
@@ -24,7 +24,7 @@ export function Onboarding() {
           ) : (
             <>
               <h1 className="serif-xl">Two colours.</h1>
-              <p className="lede">The wallet is printed in one ink and one paper. Day or night paper; your colour as lines, or flooding the page.</p>
+              <p className="lede">Everything is printed in one ink and one paper. Day or night paper; your colour as lines, or flooding the page.</p>
               <ColourPicker />
             </>
           )}

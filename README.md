@@ -2,22 +2,25 @@
   <img src="public/favicon.svg" width="96" height="96" alt="">
 </p>
 
-<h1 align="center">QR Code Wallet</h1>
+<h1 align="center">QR Code Pocket</h1>
 
 <p align="center">
-  <strong>A wallet for the QR codes you collect: tickets, entries, reservations, boarding passes.</strong><br>
+  <strong>Keep all your QR codes in your pocket: tickets, entries, reservations, boarding passes.</strong><br>
   Save a QR code from a screenshot or PDF, keep it in one place, show it full screen at the gate.<br>
   Local-first. Works offline. No account. Installs to your Home Screen.
 </p>
 
 <p align="center">
-  <img src="public/og.png" width="720" alt="QR Code Wallet: a train ticket, Nozomi 23 from Tokyo to Kyoto at 10:03, its QR code drawn with rounded modules inside a dashed crop frame.">
+  <img src="public/og.png" width="720" alt="QR Code Pocket: a train ticket, Nozomi 23 from Tokyo to Kyoto at 10:03, its QR code drawn with rounded modules inside a dashed crop frame.">
 </p>
 
 Travelling, you collect QR codes everywhere: Shinkansen and rail tickets, museum and attraction entries,
 restaurant bookings, takeaway order numbers, boarding passes, event tickets. They end up as screenshots in
-your camera roll and PDFs in your email. QR Code Wallet keeps them in one place, reads what they are, and
+your camera roll and PDFs in your email. QR Code Pocket keeps them in one place, reads what they are, and
 puts the right one on screen when you need it.
+
+People call this a QR code wallet, a QR code keeper, holder or saver; whatever the word, the job is the
+same: keep the codes you'd otherwise dig out of screenshots and emails, and show the right one at the gate.
 
 It's a progressive web app (PWA): open it in Safari or Chrome and add it to your Home Screen. No App Store,
 no sign-up, and your codes never leave your phone.
@@ -54,7 +57,8 @@ Most of the time you just confirm. The details come from two places, and each va
 </p>
 
 - **A wallet, not a list.** Upcoming tickets sit in a stack, the next one on top with a countdown. Tap one
-  and it opens full screen; flick sideways through the rest.
+  and it springs up while the rest tuck into a pile below; pull it down to put it back, flick sideways
+  through the rest.
 - **The code as big as the screen allows**, with the screen kept awake. **Bright** puts it on a lit plate.
 - **Plain** shows the classic black-on-white code for fussy scanners; **Original** shows your screenshot.
 - **Mark as used** postmarks the ticket into **Collected**: the trip, ticket by ticket, with a few numbers on top.
@@ -77,11 +81,11 @@ style is checked against a real decoder (`scripts/qr-scan-test.mjs`).
 
 ## FAQ
 
-**How do I save a QR code from a screenshot on iPhone?** Open QR Code Wallet, tap **+ Add**, choose
+**How do I save a QR code from a screenshot on iPhone?** Open QR Code Pocket, tap **+ Add**, choose
 **Photos & files**, pick the screenshot. The code is decoded on your phone.
 
 **Can I add these codes to Apple Wallet or Google Wallet?** Not yet. It's planned (see the research in
-[docs/research](docs/research)). Until then, QR Code Wallet itself is the wallet.
+[docs/research](docs/research)). Until then, QR Code Pocket itself is the wallet.
 
 **Does it work offline?** Yes, once it's on your Home Screen: the app, the code reader and the text
 recognition all work without a connection.
@@ -93,7 +97,7 @@ refuses, use **Plain** (classic black on white) or **Original** (your screenshot
 
 ## How it compares
 
-| | QR Code Wallet | Screenshot album | "QR to Apple Wallet" apps |
+| | QR Code Pocket | Screenshot album | "QR to Apple Wallet" apps |
 | --- | --- | --- | --- |
 | Reads the details for you | Yes, from the code and the ticket text | No | Mostly typed by hand |
 | Works offline | Yes | Yes | Varies |
@@ -112,15 +116,15 @@ scripts/shortcut.sh https://<host> && pnpm build   # signed iOS "Add to" Shortcu
 
 Vite, React and TypeScript, with plain CSS. [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) reads and
 writes the codes, [pdf.js](https://mozilla.github.io/pdf.js/) opens PDFs,
-[tesseract.js](https://github.com/naptha/tesseract.js) reads text, [motion](https://motion.dev) and the
-View Transitions API animate, [Phosphor](https://phosphoricons.com) draws the icons, and
+[tesseract.js](https://github.com/naptha/tesseract.js) reads text, [motion](https://motion.dev) springs
+the wallet stack, [Phosphor](https://phosphoricons.com) draws the icons, and
 [vite-plugin-pwa](https://vite-pwa-org.netlify.app) makes it installable.
 
 | Path | What's there |
 | --- | --- |
 | `src/scan/` | Code detection and drawing, PDF pages, OCR, ticket-text and payload parsing |
 | `src/store/` | IndexedDB, tickets, backup |
-| `src/ui/` | Stack, full-screen ticket pager, style pager, review flow, settings, QR module styles |
+| `src/ui/` | Wallet stack, ticket face, sheets, style pager, review flow, settings, QR module styles |
 | `src/theme.ts` | The two-colour system: day and night looks, omakase colours |
 | `server.mjs` | Static server and share inbox, no dependencies |
 | `scripts/` | Decode test for the code styles, brand assets, OCR assets, the iOS Shortcut |

@@ -6,14 +6,13 @@ import { loadPasses, usePasses, walletOrder } from "./store/passes";
 import { useTheme } from "./theme";
 import { AddSheet } from "./ui/AddSheet";
 import { categoryInfo } from "./categories";
-import { Deck } from "./ui/Deck";
+import { WalletStack } from "./ui/WalletStack";
 import { historyDay } from "./ui/format";
 import { Onboarding } from "./ui/Onboarding";
 import { Review, type Source } from "./ui/Review";
 import { Scanner } from "./ui/Scanner";
 import { Settings } from "./ui/Settings";
 import { Sheet } from "./ui/Sheet";
-import { TicketPager } from "./ui/TicketPager";
 import { prepareCode } from "./ui/qr";
 import type { Pass } from "./store/db";
 
@@ -29,8 +28,8 @@ export function App() {
   const passes = usePasses((s) => s.passes);
   const loaded = usePasses((s) => s.loaded);
   const [tab, setTab] = useState<Tab>("upcoming");
-  /** The open ticket: which list it's paged through, and which one is showing. */
-  const [open, setOpen] = useState<{ list: Tab; id: string; current: string }>();
+  /** A ticket is open in the wallet (the title area fades, the list stops scrolling). */
+  const [selecting, setSelecting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [sources, setSources] = useState<Source[]>();
@@ -40,14 +39,7 @@ export function App() {
 
   const upcoming = useMemo(() => passes.filter((p) => !p.usedAt).sort(walletOrder), [passes]);
   const collected = useMemo(() => passes.filter((p) => p.usedAt).sort(byUsed), [passes]);
-  const openList = open ? (open.list === "upcoming" ? upcoming : collected) : [];
-  const openTicket = (list: Tab) => async (p: Pass) => {
-    if (open) return;
-    // Wait (briefly) for the code to be ready, so it's there from the first frame.
-    if (p.codes[0]) await Promise.race([prepareCode(p.codes[0], p.style), new Promise((r) => setTimeout(r, 250))]);
-    setOpen({ list, id: p.id, current: p.id });
-  };
-  const closeTicket = useCallback(() => setOpen(undefined), []);
+
 
   const showToast = useCallback((msg: string, undo?: () => void) => {
     const id = Date.now();
@@ -129,50 +121,45 @@ export function App() {
 
   const next = upcoming[0];
   return (
-    <div className="app">
-      <header className="header">
-        <div className="masthead">
-          <span>QR Code Wallet</span>
-          <span className="masthead-actions">
-            <button className="link" onClick={() => setSettings("open")}>Settings</button>
-            <button className="link strong" onClick={() => setAdding(true)}>+ Add</button>
-          </span>
-        </div>
-        <h1 className="title serif">{tab === "upcoming" ? "Upcoming" : "Collected"}</h1>
-        <p className="subtitle">
-          {tab === "upcoming"
-            ? upcoming.length
-              ? `${upcoming.length} ticket${upcoming.length === 1 ? "" : "s"}${next?.time ? ` · next at ${next.time}` : ""}`
-              : "Nothing coming up"
-            : `${collected.length} used`}
-        </p>
-        <nav className="tabs">
-          <button className={tab === "upcoming" ? "on" : ""} onClick={() => setTab("upcoming")}>Upcoming {upcoming.length || ""}</button>
-          <button className={tab === "collected" ? "on" : ""} onClick={() => setTab("collected")}>Collected {collected.length || ""}</button>
-        </nav>
-      </header>
-
+    <div className={`app${selecting ? " selecting" : ""}`}>
       <main className="main">
+        <header className="header">
+          <div className="masthead">
+            <span>QR Code Pocket</span>
+            <span className="masthead-actions">
+              <button className="link" onClick={() => setSettings("open")}>Settings</button>
+              <button className="link strong" onClick={() => setAdding(true)}>+ Add</button>
+            </span>
+          </div>
+          <h1 className="title serif">{tab === "upcoming" ? "Upcoming" : "Collected"}</h1>
+          <p className="subtitle">
+            {tab === "upcoming"
+              ? upcoming.length
+                ? `${upcoming.length} ticket${upcoming.length === 1 ? "" : "s"}${next?.time ? ` · next at ${next.time}` : ""}`
+                : "Nothing coming up"
+              : `${collected.length} used`}
+          </p>
+          <nav className="tabs">
+            <button className={tab === "upcoming" ? "on" : ""} onClick={() => setTab("upcoming")}>Upcoming {upcoming.length || ""}</button>
+            <button className={tab === "collected" ? "on" : ""} onClick={() => setTab("collected")}>Collected {collected.length || ""}</button>
+          </nav>
+        </header>
         {loaded &&
           (tab === "upcoming" ? (
             upcoming.length ? (
-              <Deck passes={upcoming} onOpen={openTicket("upcoming")} />
+              <WalletStack key="upcoming" passes={upcoming} onToast={showToast} onSelecting={setSelecting} />
             ) : (
               <Empty onAdd={() => setAdding(true)} />
             )
           ) : collected.length ? (
             <>
               <Stats passes={collected} />
-              <Deck passes={collected} onOpen={openTicket("collected")} used />
+              <WalletStack key="collected" passes={collected} onToast={showToast} onSelecting={setSelecting} />
             </>
           ) : (
             <p className="lede empty-note">Mark a ticket as used and it's postmarked and kept here, so the trip stays with you.</p>
           ))}
       </main>
-
-      {open && openList.length > 0 && (
-        <TicketPager key={open.list + open.id} passes={openList} startId={open.id} onCurrent={(id) => setOpen((o) => o && { ...o, current: id })} onClose={closeTicket} onToast={showToast} />
-      )}
 
       <AnimatePresence>
         {adding && (
@@ -200,7 +187,7 @@ export function App() {
                 setSources(undefined);
                 if (n) {
                   setTab("upcoming");
-                  showToast(n === 1 ? "Added to your wallet" : `Added ${n} tickets`);
+                  showToast(n === 1 ? "Added to your pocket" : `Added ${n} tickets`);
                 }
               }}
             />

@@ -147,7 +147,7 @@ export function Review({ sources, onDone }: { sources: Source[]; onDone: (saved:
               {d.codes.length === 0 ? "No code found. The image becomes the stamp." : d.codes.length === 1 ? `${prettyFormat(d.codes[0].format)}${d.suggestions.payload && d.suggestions.payload.kind !== "text" ? ` · ${d.suggestions.payload.label}` : ""} · ${d.codes[0].text.length} characters` : `${d.codes.length} codes in one ticket`}
               {reading ? " · reading the text…" : ""}
             </p>
-            {d.duplicateOf && <p className="note">Already in your wallet as “{d.duplicateOf}”.</p>}
+            {d.duplicateOf && <p className="note">Already in your pocket as “{d.duplicateOf}”.</p>}
             <Fields
               fields={item.fields}
               onChange={(fields) => patch(item.key, () => ({ fields }))}
@@ -155,7 +155,7 @@ export function Review({ sources, onDone }: { sources: Source[]; onDone: (saved:
               suggestions={d.suggestions}
               reading={reading}
             />
-            <button className="btn solid wide" onClick={save} disabled={saving}>Add to wallet</button>
+            <button className="btn solid wide" onClick={save} disabled={saving}>Add to pocket</button>
           </>
         )}
         {items.length > 1 && <button className="link skip" onClick={advance}>Skip this one</button>}

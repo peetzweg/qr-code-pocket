@@ -62,7 +62,7 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
           <button className="btn line wide" onClick={() => setStyling(true)}>{QR_STYLES.find((s) => s.id === style)?.label} · swipe through styles →</button>
         </section>
         <section>
-          <h3>Your wallet</h3>
+          <h3>Your pocket</h3>
           <dl className="facts">
             <div><dt>Tickets</dt><dd>{passes.length - used} upcoming · {used} collected</dd></div>
             {usage && (
@@ -146,7 +146,7 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
         <section>
           <h3>About</h3>
           <p className="small">
-            <strong>QR Code Wallet</strong> keeps your tickets and QR codes in one place. Codes are found and redrawn on your phone, and the text around them is read by a small
+            <strong>QR Code Pocket</strong> keeps your tickets and QR codes in one place. Codes are found and redrawn on your phone, and the text around them is read by a small
             on-device model (Tesseract, Japanese and English), so it works offline too.
           </p>
           <p className="muted small mono">

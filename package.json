@@ -2,7 +2,7 @@
   "name": "qr-code-wallet",
   "private": true,
   "version": "0.1.0",
-  "description": "QR Code Wallet: save QR codes from screenshots and PDFs, keep tickets and reservations in one place, show them full screen. Local-first PWA, works offline.",
+  "description": "QR Code Pocket: save QR codes from screenshots and PDFs, keep tickets and reservations in one place, show them full screen. Local-first PWA, works offline.",
   "license": "MIT",
   "author": "peetzweg <phil.czek@gmail.com>",
   "type": "module",

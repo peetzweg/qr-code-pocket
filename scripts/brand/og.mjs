@@ -48,7 +48,7 @@ p { font-size: 25px; line-height: 1.4; margin-top: 30px; max-width: 520px; }
 </style></head><body>
 <div class="left">
   <div class="mono">Tickets · entries · reservations</div>
-  <h1>QR Code<br>Wallet</h1>
+  <h1>QR Code<br>Pocket</h1>
   <p>Every code in one place. Add the screenshot or PDF; it's read on your phone and printed in your style.</p>
 </div>
 <div class="foot mono"><span>Local-first</span><span>Works offline</span><span>No account</span></div>

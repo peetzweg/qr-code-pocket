@@ -224,7 +224,7 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   ctx.textAlign = "center";
   ctx.font = `500 22px ${MONO}`;
   spaced(ctx, 4);
-  ctx.fillText("QR CODE WALLET", W / 2, H - 38);
+  ctx.fillText("QR CODE POCKET", W / 2, H - 38);
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Couldn't draw the ticket"))), "image/png"));
 }

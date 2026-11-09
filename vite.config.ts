@@ -74,8 +74,8 @@ export default defineConfig({
       },
       manifest: {
         id: base,
-        name: "QR Code Wallet",
-        short_name: "QR Wallet",
+        name: "QR Code Pocket",
+        short_name: "QR Pocket",
         description: "A wallet for the QR codes you collect while travelling: tickets, entries, reservations. Stamp them when used.",
         lang: "en",
         theme_color: "#ffffff",
@@ -84,7 +84,7 @@ export default defineConfig({
         orientation: "portrait",
         categories: ["travel", "utilities", "lifestyle"],
         // Shown in Android's and desktop Chrome's richer install dialog.
-        screenshots: [{ src: `${base}og.png`, sizes: "1200x630", type: "image/png", form_factor: "wide", label: "QR Code Wallet" }],
+        screenshots: [{ src: `${base}og.png`, sizes: "1200x630", type: "image/png", form_factor: "wide", label: "QR Code Pocket" }],
         // Android: Kippu appears in the share sheet. The server stores the files in its inbox (server.mjs).
         share_target: {
           action: `${base}api/share`,
