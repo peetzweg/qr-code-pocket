@@ -115,8 +115,8 @@ a { color: inherit; }
 .card .face { height: var(--card-h, 100%); }
 .card:not(.open) .page-actions { visibility: hidden; }
 .card:not(.open) .ticket { cursor: pointer; }
-.card:not(.open):active .ticket { transform: scale(0.99); }
-.card .ticket { transition: transform 160ms var(--ease-out); }
+.card:not(.open) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.card.lifted { cursor: grabbing; }
 .card-details { padding: 0 2px calc(var(--safe-bottom) + 24px); }
 .card-postmark { position: absolute; right: 12px; top: 40px; width: 96px; color: var(--fg); pointer-events: none; --paper-under: var(--bg); }
 .wallet-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: calc(var(--safe-top) + 6px) 12px 4px; max-width: 680px; margin: 0 auto; }

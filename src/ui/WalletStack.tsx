@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Pass } from "../store/db";
-import { markUsed, restore } from "../store/passes";
+import { markUsed, reorder, restore } from "../store/passes";
 import { Close } from "./icons";
 import { Postmark, postmarkDate } from "./Postmark";
 import { Sheet } from "./Sheet";
@@ -16,6 +16,8 @@ import { BrightToggle, Details, EditTicket, leave, PlainView, shareTicket, Style
  * - Tap that stack, pull the ticket down, or press Escape, and everything springs back.
  * - Swipe the open ticket sideways (or use ← →) for the next one.
  * - Overscroll at the top of the list and the cards fan apart.
+ * - Press a card and it rises a little out of the stack. Hold it and it comes loose: drag it through
+ *   the stack and the others spring aside to make room; let go and it drops into that slot.
  *
  * Only transforms move (motion springs); the cards themselves never change size or content.
  */
@@ -23,6 +25,19 @@ const SPRING = { type: "spring", stiffness: 320, damping: 34, mass: 1 } as const
 const BAR = 52;
 const PEEK = 10;
 const GAP_TOP = 18;
+/** A quick spring for small, direct responses (press, pick-up). */
+const SNAP = { type: "spring", stiffness: 520, damping: 32, mass: 0.8 } as const;
+/** Lift on press, after a beat so a scroll that starts on a card doesn't twitch it. */
+const PRESS_DELAY = 70;
+const LIFT = 10;
+/** Hold this long to pick a card up. */
+const HOLD = 400;
+const SLOP = 8;
+
+type Grip = {
+  id: string; x0: number; y0: number; y: number; cardY: number; scroll0: number;
+  picked: boolean; to?: number; press?: number; hold?: number; main?: HTMLElement | null;
+};
 
 function useScreen() {
   const probe = useRef<{ top: number; bottom: number }>({ top: 0, bottom: 0 });
@@ -53,7 +68,9 @@ function WakeLock() {
   return null;
 }
 
-export function WalletStack({ passes, onToast, onSelecting }: { passes: Pass[]; onToast: (msg: string, undo?: () => void) => void; onSelecting: (on: boolean) => void }) {
+export function WalletStack({ passes, onToast, onSelecting, reorderable = false }: {
+  passes: Pass[]; onToast: (msg: string, undo?: () => void) => void; onSelecting: (on: boolean) => void; reorderable?: boolean;
+}) {
   const reduce = useReducedMotion();
   const screen = useScreen();
   const wrap = useRef<HTMLDivElement>(null);
@@ -61,6 +78,10 @@ export function WalletStack({ passes, onToast, onSelecting }: { passes: Pass[]; 
   const [wrapTop, setWrapTop] = useState(0);
   const [stamping, setStamping] = useState<string>();
   const [overlay, setOverlay] = useState<"plain" | "original" | "style" | "edit">();
+  const [pressed, setPressed] = useState<string>();
+  const [drag, setDrag] = useState<{ id: string; to: number; y: number }>();
+  const grip = useRef<Grip | undefined>(undefined);
+  const swallowClick = useRef(false);
   const index = passes.findIndex((p) => p.id === sel);
   const selected = index >= 0 ? passes[index] : undefined;
 
@@ -107,13 +128,139 @@ export function WalletStack({ passes, onToast, onSelecting }: { passes: Pass[]; 
     return () => main.removeEventListener("scroll", onScroll);
   }, []);
 
+  // While a card is carried, the stack is laid out as if it were already in its new slot.
+  const order = passes.map((p) => p.id);
+  if (drag) {
+    order.splice(order.indexOf(drag.id), 1);
+    order.splice(drag.to, 0, drag.id);
+  }
+  const slotOf = (id: string) => order.indexOf(id);
+
   function yOf(i: number) {
-    if (!selected) return GAP_TOP + i * screen.head;
+    if (!selected) return GAP_TOP + slotOf(passes[i].id) * screen.head;
     if (i === index) return openTop - wrapTop;
     const k = i < index ? i : i - 1;
     const slot = Math.min(k, others - 1) - Math.max(0, others - 4);
     return stackTop - wrapTop + Math.max(0, slot) * PEEK;
   }
+
+  // Press, hold and carry. Touch and mouse share the logic; touch needs a non-passive listener to
+  // stop the list scrolling while a card is carried.
+  const latest = useRef({ passes, selected, head: screen.head, h: screen.h, reorderable, yOf });
+  latest.current = { passes, selected, head: screen.head, h: screen.h, reorderable, yOf };
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    let raf = 0;
+    const place = () => {
+      const g = grip.current;
+      if (!g?.picked) return;
+      const { passes, head } = latest.current;
+      const y = g.cardY + (g.y - g.y0) + ((g.main?.scrollTop ?? 0) - g.scroll0);
+      const to = Math.min(passes.length - 1, Math.max(0, Math.round((y - GAP_TOP) / head)));
+      g.to = to;
+      setDrag((d) => (d && d.y === y && d.to === to ? d : { id: g.id, to, y }));
+    };
+    // Carried near the top or bottom edge, the list scrolls along.
+    const edge = () => {
+      const g = grip.current;
+      if (!g?.picked) return;
+      const zone = 90, h = latest.current.h;
+      const v = g.y < zone ? -(zone - g.y) / 6 : g.y > h - zone ? (g.y - (h - zone)) / 6 : 0;
+      if (v && g.main) {
+        g.main.scrollTop += v;
+        place();
+      }
+      raf = requestAnimationFrame(edge);
+    };
+    const down = (x: number, y: number, target: EventTarget | null) => {
+      const { selected, passes, yOf, reorderable } = latest.current;
+      if (selected) return;
+      const card = (target as HTMLElement | null)?.closest<HTMLElement>("[data-pass]");
+      const i = passes.findIndex((p) => p.id === card?.dataset.pass);
+      if (i < 0) return;
+      swallowClick.current = false;
+      const main = el.closest<HTMLElement>(".main");
+      const g: Grip = { id: passes[i].id, x0: x, y0: y, y, cardY: yOf(i), scroll0: main?.scrollTop ?? 0, picked: false, main };
+      g.press = window.setTimeout(() => setPressed(g.id), PRESS_DELAY);
+      if (reorderable && passes.length > 1)
+        g.hold = window.setTimeout(() => {
+          g.picked = true;
+          swallowClick.current = true;
+          navigator.vibrate?.(10);
+          setPressed(undefined);
+          place();
+          raf = requestAnimationFrame(edge);
+        }, HOLD);
+      grip.current = g;
+    };
+    const move = (x: number, y: number) => {
+      const g = grip.current;
+      if (!g) return false;
+      g.y = y;
+      if (!g.picked) {
+        // Moved: a scroll (touch) or a drag-off (mouse), not a tap.
+        if (Math.hypot(x - g.x0, y - g.y0) > SLOP) {
+          swallowClick.current = true;
+          release(false);
+        }
+        return false;
+      }
+      place();
+      return true;
+    };
+    const release = (commit: boolean) => {
+      const g = grip.current;
+      if (!g) return;
+      clearTimeout(g.press);
+      clearTimeout(g.hold);
+      cancelAnimationFrame(raf);
+      grip.current = undefined;
+      if (!commit) setPressed(undefined);
+      if (!g.picked) return;
+      if (g.to !== undefined) {
+        const ids = latest.current.passes.map((p) => p.id).filter((id) => id !== g.id);
+        ids.splice(g.to, 0, g.id);
+        void reorder(ids);
+      }
+      setDrag(undefined);
+      navigator.vibrate?.(6);
+    };
+    // A press that ends without moving is a tap: keep the lift until the click opens the card.
+    const up = () => {
+      const g = grip.current;
+      release(true);
+      if (g && !g.picked) window.setTimeout(() => setPressed((p) => (p === g.id ? undefined : p)), 160);
+    };
+
+    const tStart = (e: TouchEvent) => (e.touches.length === 1 ? down(e.touches[0].clientX, e.touches[0].clientY, e.target) : release(false));
+    const tMove = (e: TouchEvent) => {
+      if (move(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault();
+    };
+    const pDown = (e: PointerEvent) => e.pointerType === "mouse" && e.button === 0 && down(e.clientX, e.clientY, e.target);
+    const pMove = (e: PointerEvent) => e.pointerType === "mouse" && move(e.clientX, e.clientY);
+    const pUp = (e: PointerEvent) => e.pointerType === "mouse" && up();
+    const menu = (e: Event) => grip.current && e.preventDefault();
+    el.addEventListener("touchstart", tStart, { passive: true });
+    el.addEventListener("touchmove", tMove, { passive: false });
+    el.addEventListener("touchend", up);
+    el.addEventListener("touchcancel", up);
+    el.addEventListener("pointerdown", pDown);
+    addEventListener("pointermove", pMove);
+    addEventListener("pointerup", pUp);
+    el.addEventListener("contextmenu", menu);
+    return () => {
+      release(false);
+      el.removeEventListener("touchstart", tStart);
+      el.removeEventListener("touchmove", tMove);
+      el.removeEventListener("touchend", up);
+      el.removeEventListener("touchcancel", up);
+      el.removeEventListener("pointerdown", pDown);
+      removeEventListener("pointermove", pMove);
+      removeEventListener("pointerup", pUp);
+      el.removeEventListener("contextmenu", menu);
+    };
+  }, []);
 
   async function use(p: Pass) {
     setStamping(p.id);
@@ -142,21 +289,33 @@ export function WalletStack({ passes, onToast, onSelecting }: { passes: Pass[]; 
       {passes.map((p, i) => {
         const open = p.id === sel;
         const k = selected && !open ? (i < index ? i : i - 1) : 0;
+        const carried = drag?.id === p.id;
+        const lifted = carried || (pressed === p.id && !selected);
+        const slot = slotOf(p.id);
         return (
           <motion.div
             key={p.id}
             data-pass={p.id}
-            className={`card${open ? " open" : ""}`}
-            style={{ zIndex: i, height: cardH, "--i": i, "--card-h": `${cardH}px` } as React.CSSProperties}
+            className={`card${open ? " open" : ""}${lifted ? " lifted" : ""}`}
+            style={{ zIndex: carried ? 999 : slot, height: cardH, "--i": slot, "--card-h": `${cardH}px` } as React.CSSProperties}
             initial={false}
-            animate={{ y: yOf(i) }}
-            transition={reduce ? { duration: 0 } : { ...SPRING, delay: selected && !open ? 0.012 * k : 0 }}
+            animate={{ y: carried ? drag.y - LIFT : yOf(i) - (lifted ? LIFT : 0), scale: carried ? 1.03 : 1 }}
+            transition={
+              reduce ? { duration: 0 }
+              : carried ? { y: { duration: 0 }, scale: SNAP }
+              : pressed === p.id ? SNAP
+              : { ...SPRING, delay: selected && !open ? 0.012 * k : 0 }
+            }
           >
             <CardBody
               pass={p}
               open={open}
               stamping={stamping === p.id}
-              onTap={() => (selected ? (open ? undefined : select(undefined)) : select(p.id))}
+              onTap={() => {
+                if (swallowClick.current) return void (swallowClick.current = false);
+                if (selected) return open ? undefined : select(undefined);
+                select(p.id);
+              }}
               onDismiss={() => select(undefined)}
               onSwipe={(dir) => {
                 const next = passes[i + dir];

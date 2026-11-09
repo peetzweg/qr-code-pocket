@@ -58,7 +58,7 @@ Most of the time you just confirm. The details come from two places, and each va
 
 - **A wallet, not a list.** Upcoming tickets sit in a stack, the next one on top with a countdown. Tap one
   and it springs up while the rest tuck into a pile below; pull it down to put it back, flick sideways
-  through the rest.
+  through the rest. Hold one and drag it through the stack to put your tickets in your own order.
 - **The code as big as the screen allows**, with the screen kept awake. **Bright** puts it on a lit plate.
 - **Plain** shows the classic black-on-white code for fussy scanners; **Original** shows your screenshot.
 - **Mark as used** postmarks the ticket into **Collected**: the trip, ticket by ticket, with a few numbers on top.

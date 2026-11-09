@@ -66,6 +66,33 @@ export function walletOrder(a: Pass, b: Pass) {
   return b.createdAt - a.createdAt;
 }
 
+/**
+ * The upcoming stack: by date, except that tickets the owner has dragged into place keep that order.
+ * Ranked tickets take the date-order slots that ranked tickets hold, in rank order; a new, unranked
+ * ticket still lands where its date puts it.
+ */
+export function walletSort(passes: Pass[]): Pass[] {
+  const byDate = [...passes].sort(walletOrder);
+  const ranked = byDate.filter((p) => p.rank !== undefined).sort((a, b) => a.rank! - b.rank!);
+  let r = 0;
+  return byDate.map((p) => (p.rank !== undefined ? ranked[r++] : p));
+}
+
+/** Save a dragged order: every ticket in `ids` gets its index as rank. The store updates first, so the drop doesn't flicker. */
+export async function reorder(ids: string[]) {
+  const changed = new Map<string, Pass>();
+  const all = store.get().passes;
+  ids.forEach((id, i) => {
+    const p = all.find((x) => x.id === id);
+    if (p && p.rank !== i) changed.set(id, { ...p, rank: i });
+  });
+  if (!changed.size) return;
+  store.set((s) => ({ passes: s.passes.map((p) => changed.get(p.id) ?? p) }));
+  const tx = (await db).transaction("passes", "readwrite");
+  for (const p of changed.values()) tx.store.put(p);
+  await tx.done;
+}
+
 /** Duplicate check on import: the same code payload already in the wallet or history. */
 export function findByCode(text: string): Pass | undefined {
   return store.get().passes.find((p) => p.codes.some((c) => c.text === text));

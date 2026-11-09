@@ -37,6 +37,8 @@ export interface Pass {
   usedAt?: number;
   /** This ticket's own QR style; otherwise the wallet's. */
   style?: QrStyle;
+  /** Place in the upcoming stack once the owner has dragged tickets into their own order. */
+  rank?: number;
 }
 
 /**

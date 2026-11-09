@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { inboxAvailable, takeInbox } from "./inbox";
 import { draftFromText, type Draft } from "./scan/importer";
-import { loadPasses, usePasses, walletOrder } from "./store/passes";
+import { loadPasses, usePasses, walletOrder, walletSort } from "./store/passes";
 import { useTheme } from "./theme";
 import { AddSheet } from "./ui/AddSheet";
 import { categoryInfo } from "./categories";
@@ -37,7 +37,7 @@ export function App() {
   const [toast, setToast] = useState<Toast>();
   const [shareReady, setShareReady] = useState(false);
 
-  const upcoming = useMemo(() => passes.filter((p) => !p.usedAt).sort(walletOrder), [passes]);
+  const upcoming = useMemo(() => walletSort(passes.filter((p) => !p.usedAt)), [passes]);
   const collected = useMemo(() => passes.filter((p) => p.usedAt).sort(byUsed), [passes]);
 
 
@@ -119,7 +119,8 @@ export function App() {
 
   if (!onboarded) return <Onboarding />;
 
-  const next = upcoming[0];
+  // The soonest by date, whatever order the stack has been dragged into.
+  const next = upcoming.reduce<Pass | undefined>((a, p) => (!a || walletOrder(p, a) < 0 ? p : a), undefined);
   return (
     <div className={`app${selecting ? " selecting" : ""}`}>
       <main className="main">
@@ -147,7 +148,7 @@ export function App() {
         {loaded &&
           (tab === "upcoming" ? (
             upcoming.length ? (
-              <WalletStack key="upcoming" passes={upcoming} onToast={showToast} onSelecting={setSelecting} />
+              <WalletStack key="upcoming" reorderable passes={upcoming} onToast={showToast} onSelecting={setSelecting} />
             ) : (
               <Empty onAdd={() => setAdding(true)} />
             )
