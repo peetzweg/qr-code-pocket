@@ -4,7 +4,7 @@ import { addPass, findByCode, type NewPass } from "../store/passes";
 import type { Suggestions } from "./extract";
 import { infer } from "./infer";
 import { crop, loadImage, pixels, sourceJpeg, toBlob } from "./image";
-import { findCodes, type Found } from "./zxing";
+import { findCodes, isLinear, type Found } from "./zxing";
 
 export interface DraftCode extends Omit<Found, "box"> {
   crop?: Blob;
@@ -36,9 +36,16 @@ async function codesFrom(canvas: HTMLCanvasElement, found: Found[]): Promise<Dra
   );
 }
 
+/** Only barcodes (EAN, Code 128…) and nothing dated: most likely a loyalty or membership card. */
+function suggestionsFor(text: string, codes: DraftCode[]) {
+  const s = infer(text, codes.map((c) => ({ text: c.text, binary: !!c.bytes })));
+  if (!s.category && !s.dates.length && codes.length && codes.every((c) => isLinear(c.format))) return { ...s, category: "card" as const };
+  return s;
+}
+
 function finish(d: Omit<Draft, "suggestions" | "duplicateOf">): Draft {
   const texts = d.codes.map((c) => c.text);
-  return { ...d, suggestions: infer(d.text, d.codes.map((c) => ({ text: c.text, binary: !!c.bytes }))), duplicateOf: texts.map(findByCode).find(Boolean)?.title };
+  return { ...d, suggestions: suggestionsFor(d.text, d.codes), duplicateOf: texts.map(findByCode).find(Boolean)?.title };
 }
 
 /** A copy with the codes painted over: OCR reads QR modules as junk like "[=] 1s [=]". */
@@ -105,7 +112,7 @@ export function draftFromText(text: string): Draft {
 }
 
 export function withText(d: Draft, text: string): Draft {
-  return { ...d, text, textFrom: "ocr", suggestions: infer(text, d.codes.map((c) => ({ text: c.text, binary: !!c.bytes }))) };
+  return { ...d, text, textFrom: "ocr", suggestions: suggestionsFor(text, d.codes) };
 }
 
 /** Several screenshots of one booking (one per person, say) as a single pass. */
@@ -134,6 +141,8 @@ export interface PassFields {
   to?: string;
   seat?: string;
   notes?: string;
+  site?: string;
+  logoId?: string;
 }
 
 export async function saveDraft(d: Draft, fields: PassFields) {

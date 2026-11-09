@@ -37,6 +37,10 @@ export interface Pass {
   usedAt?: number;
   /** This ticket's own QR style; otherwise the wallet's. */
   style?: QrStyle;
+  /** A card's store or programme website ("uniqlo.com"); its logo is fetched from there. */
+  site?: string;
+  /** The brand's logo, full colour, as a stored image. */
+  logoId?: string;
   /** Place in the upcoming stack once the owner has dragged tickets into their own order. */
   rank?: number;
 }

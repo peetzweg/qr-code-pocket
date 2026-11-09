@@ -26,6 +26,7 @@ const KEYWORDS: Record<Exclude<Category, "other">, (string | RegExp)[]> = {
   sight: ["museum", "美術館", "博物館", "入館", "入場", "admission", "entry", "entrance", "teamlab", "チームラボ", "ジブリ", "ghibli", "寺", "神社", "shrine", "temple", "castle", "城", "tower", "タワー", "展望", "observatory", "gallery", "ギャラリー", "exhibition", "展覧会", "aquarium", "水族館", "庭園", "garden", "zoo", "動物園", "pass", "パス"],
   food: ["restaurant", "レストラン", "lunch", "ランチ", "dinner", "ディナー", "takeout", "テイクアウト", "take away", "注文", "order", "cafe", "カフェ", "ramen", "ラーメン", "sushi", "寿司", "鮨", "tablecheck", "tabelog", "食べログ", "omakase", "おまかせ", "コース", "course", "席のみ", "居酒屋", "izakaya", "焼肉", "yakiniku", "menu", "メニュー", "番号札", "整理券"],
   event: ["concert", "ライブ", "公演", "開演", "開場", "festival", "フェス", "祭", "match", "試合", "theater", "theatre", "劇場", "show", "ショー", "stadium", "スタジアム", "ドーム", "arena", "アリーナ", "eplus", "イープラス", "チケットぴあ", "ローチケ"],
+  card: ["member", "membership", "loyalty", "rewards", "points", "point card", "ポイント", "会員", "メンバーズ", "カード番号", "card no", "card number", "club card", "bonus card", "kundenkarte", "payback"],
   stay: ["hotel", "ホテル", "旅館", "ryokan", "check-in", "check in", "チェックイン", "宿泊", "airbnb", "booking.com", "hostel", "ホステル", "guest house", "ゲストハウス", "部屋", "room"],
 };
 

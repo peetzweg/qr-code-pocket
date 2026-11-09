@@ -63,6 +63,8 @@ Most of the time you just confirm. The details come from two places, and each va
 - **Plain** shows the classic black-on-white code for fussy scanners; **Original** shows your screenshot.
 - **Mark as used** postmarks the ticket into **Collected**: the trip, ticket by ticket, with a few numbers on top.
 - **Share** a ticket as an image, printed in your colours.
+- **Loyalty and membership cards** get their own tab: add the store's website and its logo is fetched,
+  in full colour, and kept on the card offline. The tab only appears once you have a card.
 
 ## Printed in your style
 

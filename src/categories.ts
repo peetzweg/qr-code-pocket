@@ -1,4 +1,4 @@
-export type Category = "train" | "transit" | "flight" | "sight" | "food" | "event" | "stay" | "other";
+export type Category = "train" | "transit" | "flight" | "sight" | "food" | "event" | "stay" | "card" | "other";
 
 export interface CategoryInfo {
   id: Category;
@@ -18,10 +18,14 @@ export const CATEGORIES: CategoryInfo[] = [
   { id: "transit", label: "Transit", kanji: "道", from: "#13b5c9", to: "#05566e" },
   { id: "flight", label: "Flight", kanji: "空", from: "#5c74a8", to: "#1a2442" },
   { id: "stay", label: "Stay", kanji: "宿", from: "#1fb386", to: "#0a5c45" },
+  { id: "card", label: "Card", kanji: "会", from: "#c9a227", to: "#6b5410" },
   { id: "other", label: "Other", kanji: "札", from: "#5d6270", to: "#25282f" },
 ];
 
 export const categoryInfo = (id: Category) => CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[CATEGORIES.length - 1];
+
+/** Loyalty and membership cards: no date, never used up; they live in their own tab. */
+export const isCard = (id: Category) => id === "card";
 
 /** Categories that read like a journey: they get the from → to line and a seat. */
 export const isJourney = (id: Category) => id === "train" || id === "transit" || id === "flight";

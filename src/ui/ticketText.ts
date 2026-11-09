@@ -1,10 +1,11 @@
-import { categoryInfo, isJourney } from "../categories";
+import { categoryInfo, isCard, isJourney } from "../categories";
+import { isLinear } from "../scan/zxing";
 import { readPayload, type PayloadInfo } from "../scan/payload";
 import type { Pass } from "../store/db";
 import { dayLabel, parseIso, todayIso } from "./format";
 
 /** The words printed on a ticket: issuer, kind, when, the line under the title. */
-export function ticketText(p: Pick<Pass, "title" | "category" | "date" | "time" | "from" | "to" | "seat" | "place" | "notes" | "codes">) {
+export function ticketText(p: Pick<Pass, "title" | "category" | "date" | "time" | "from" | "to" | "seat" | "place" | "notes" | "codes" | "site">) {
   const code = p.codes[0];
   const info: PayloadInfo | undefined = code ? readPayload(code.text, !!code.bytes) : undefined;
   const cat = categoryInfo(p.category);
@@ -12,6 +13,11 @@ export function ticketText(p: Pick<Pass, "title" | "category" | "date" | "time" 
   const route = isJourney(p.category) && p.from && p.to && !p.title.includes(p.from) ? `${p.from} → ${p.to}` : undefined;
   const sub = [route, p.seat, p.place].filter(Boolean).join(" · ") || undefined;
   const day = p.date ? dayLabel(p.date) : undefined;
+  if (isCard(p.category)) {
+    // A card: the member number under the name (what a cashier types when the scanner won't read).
+    const number = code && isLinear(code.format) && code.text.length <= 24 ? code.text.replace(/(\d{4})(?=\d)/g, "$1 ") : undefined;
+    return { info, cat, issuer: cat.label, sub: [number, p.place].filter(Boolean).join(" · ") || undefined, day: p.site };
+  }
   return { info, cat, issuer, sub, day };
 }
 

@@ -146,7 +146,7 @@ export function TicketFace({ pass, current, stamping, onUse, onRestore, onPlain 
         </footer>
       </div>
       <div className="page-actions">
-        {pass.usedAt ? (
+        {pass.category === "card" && !pass.usedAt ? null : pass.usedAt ? (
           <button className="btn line wide-flex" onClick={onRestore}>Back to upcoming</button>
         ) : (
           <button className="btn solid wide-flex" onClick={onUse} disabled={stamping}>{stamping ? "Postmarked" : "Mark as used"}</button>
@@ -241,7 +241,7 @@ export function EditTicket({ pass, onDone, onDeleted }: { pass: Pass; onDone: ()
           </dl>
         )}
         <button className="btn line wide danger" onClick={async () => { if (confirm(`Delete “${pass.title || "this ticket"}”? This can't be undone.`)) { await deletePass(pass.id); onDeleted(); } }}>
-          Delete ticket
+          {pass.category === "card" ? "Delete card" : "Delete ticket"}
         </button>
       </div>
     </>

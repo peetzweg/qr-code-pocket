@@ -16,7 +16,7 @@ import { Sheet } from "./ui/Sheet";
 import { prepareCode } from "./ui/qr";
 import type { Pass } from "./store/db";
 
-type Tab = "upcoming" | "collected";
+type Tab = "upcoming" | "cards" | "collected";
 interface Toast {
   id: number;
   msg: string;
@@ -37,8 +37,14 @@ export function App() {
   const [toast, setToast] = useState<Toast>();
   const [shareReady, setShareReady] = useState(false);
 
-  const upcoming = useMemo(() => walletSort(passes.filter((p) => !p.usedAt)), [passes]);
+  const upcoming = useMemo(() => walletSort(passes.filter((p) => !p.usedAt && p.category !== "card")), [passes]);
+  const cards = useMemo(() => walletSort(passes.filter((p) => !p.usedAt && p.category === "card")), [passes]);
   const collected = useMemo(() => passes.filter((p) => p.usedAt).sort(byUsed), [passes]);
+  // Tabs exist only for what you have: no Cards tab without a card, no Collected before the first use.
+  const shown = { upcoming: true, cards: cards.length > 0, collected: collected.length > 0 };
+  useEffect(() => {
+    if (loaded && !shown[tab]) setTab("upcoming");
+  }, [loaded, tab, shown.cards, shown.collected]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const showToast = useCallback((msg: string, undo?: () => void) => {
@@ -60,7 +66,7 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      for (const p of upcoming) {
+      for (const p of [...upcoming, ...cards]) {
         if (cancelled) return;
         if (p.codes[0]) await prepareCode(p.codes[0], p.style);
       }
@@ -68,7 +74,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [upcoming]);
+  }, [upcoming, cards]);
 
   useEffect(() => {
     loadPasses();
@@ -132,18 +138,23 @@ export function App() {
               <button className="link strong" onClick={() => setAdding(true)}>+ Add</button>
             </span>
           </div>
-          <h1 className="title serif">{tab === "upcoming" ? "Upcoming" : "Collected"}</h1>
+          <h1 className="title serif">{{ upcoming: "Upcoming", cards: "Cards", collected: "Collected" }[tab]}</h1>
           <p className="subtitle">
             {tab === "upcoming"
               ? upcoming.length
                 ? `${upcoming.length} ticket${upcoming.length === 1 ? "" : "s"}${next?.time ? ` · next at ${next.time}` : ""}`
                 : "Nothing coming up"
-              : `${collected.length} used`}
+              : tab === "cards"
+                ? `${cards.length} card${cards.length === 1 ? "" : "s"}`
+                : `${collected.length} used`}
           </p>
-          <nav className="tabs">
-            <button className={tab === "upcoming" ? "on" : ""} onClick={() => setTab("upcoming")}>Upcoming {upcoming.length || ""}</button>
-            <button className={tab === "collected" ? "on" : ""} onClick={() => setTab("collected")}>Collected {collected.length || ""}</button>
-          </nav>
+          {(shown.cards || shown.collected) && (
+            <nav className="tabs">
+              <button className={tab === "upcoming" ? "on" : ""} onClick={() => setTab("upcoming")}>Upcoming {upcoming.length || ""}</button>
+              {shown.cards && <button className={tab === "cards" ? "on" : ""} onClick={() => setTab("cards")}>Cards {cards.length}</button>}
+              {shown.collected && <button className={tab === "collected" ? "on" : ""} onClick={() => setTab("collected")}>Collected {collected.length}</button>}
+            </nav>
+          )}
         </header>
         {loaded &&
           (tab === "upcoming" ? (
@@ -152,6 +163,8 @@ export function App() {
             ) : (
               <Empty onAdd={() => setAdding(true)} />
             )
+          ) : tab === "cards" ? (
+            <WalletStack key="cards" reorderable passes={cards} onToast={showToast} onSelecting={setSelecting} />
           ) : collected.length ? (
             <>
               <Stats passes={collected} />
@@ -184,11 +197,12 @@ export function App() {
           <Sheet key="review" full onClose={() => setSources(undefined)}>
             <Review
               sources={sources}
-              onDone={(n) => {
+              onDone={(n, cats) => {
                 setSources(undefined);
                 if (n) {
-                  setTab("upcoming");
-                  showToast(n === 1 ? "Added to your pocket" : `Added ${n} tickets`);
+                  const allCards = cats.every((c) => c === "card");
+                  setTab(allCards ? "cards" : "upcoming");
+                  showToast(n === 1 ? "Added to your pocket" : `Added ${n} ${allCards ? "cards" : "tickets"}`);
                 }
               }}
             />

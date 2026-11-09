@@ -1,5 +1,5 @@
 import {
-  AirplaneTilt, ArrowUUpLeft, Bank, Bed, Bus, Camera as PCamera, ClipboardText, DownloadSimple, ForkKnife, Images, Keyboard as PKeyboard,
+  AirplaneTilt, ArrowUUpLeft, Bank, Bed, Bus, Cardholder, Camera as PCamera, ClipboardText, DownloadSimple, ForkKnife, Images, Keyboard as PKeyboard,
   MaskHappy, QrCode, Sun, TrainSimple, UploadSimple, X,
   type Icon,
 } from "@phosphor-icons/react";
@@ -28,6 +28,7 @@ const BY_CATEGORY: Record<Category, Icon> = {
   food: ForkKnife,
   event: MaskHappy,
   stay: Bed,
+  card: Cardholder,
   other: QrCode,
 };
 
