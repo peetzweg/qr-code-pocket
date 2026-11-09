@@ -182,3 +182,7 @@ export function qrArt(m: Matrix, style: QrStyle, opts: { ink?: string; paper?: s
   const sz = opts.size ? ` width="${opts.size}" height="${opts.size}"` : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-q} ${-q} ${v} ${v}"${sz} shape-rendering="geometricPrecision">${opts.paper ? `<rect x="${-q}" y="${-q}" width="${v}" height="${v}" fill="${opts.paper}"/>` : ""}${body(m, style, ink, opts.bytes)}${finders(n, FINDER[style], ink)}</svg>`;
 }
+
+
+/** The house style: every code is printed in it. Not a setting (chef's choice). */
+export const HOUSE_STYLE: QrStyle = "liquid";

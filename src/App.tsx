@@ -68,7 +68,7 @@ export function App() {
     (async () => {
       for (const p of [...upcoming, ...cards]) {
         if (cancelled) return;
-        if (p.codes[0]) await prepareCode(p.codes[0], p.style);
+        if (p.codes[0]) await prepareCode(p.codes[0]);
       }
     })();
     return () => {

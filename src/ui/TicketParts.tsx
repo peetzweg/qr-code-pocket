@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isJourney } from "../categories";
 import type { Pass } from "../store/db";
 import { deletePass, updatePass } from "../store/passes";
 import { colours, setTheme, useTheme } from "../theme";
 import { CodeView, useImageUrl } from "./CodeView";
+import { CodeLoop } from "./CodeLoop";
 import { Crop } from "./Crop";
 import { Fields, fieldsOf } from "./Fields";
 import { longDate, prettyFormat } from "./format";
@@ -12,15 +13,14 @@ import { Bright } from "./icons";
 import { Postmark, postmarkDate } from "./Postmark";
 import { bitStrip, bytesOf, microline, serialOf } from "./print";
 import { QrImage } from "./qr";
-import { QR_STYLES } from "./qrart";
 import { ticketImage } from "./shareImage";
-import { StylePager } from "./StylePager";
+import { outline, shapeOf, type Shape } from "./shapes";
 import { TicketHead } from "./TicketHead";
 import { ticketText } from "./ticketText";
 
 /** The pieces of an open ticket, used by the wallet stack. */
 
-export type Action = "edit" | "style" | "share" | "original";
+export type Action = "edit" | "share" | "original";
 
 export function useWakeLock() {
   useEffect(() => {
@@ -69,23 +69,34 @@ export async function leave(id: string) {
   await el.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(28px)" }], { duration: 220, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "forwards" }).finished.catch(() => {});
 }
 
-export function StyleForTicket({ pass, onDone }: { pass: Pass; onDone: () => void }) {
-  const wallet = useTheme((t) => t.qrStyle);
+
+/** The ticket's face: head, tear line, the code in its frame, bit strip, and its two buttons. */
+/** The ticket's die-cut outline, drawn to its measured size (see shapes.ts). */
+function TicketOutline({ shape }: { shape: Shape }) {
+  const ref = useRef<SVGSVGElement>(null);
+  const [box, setBox] = useState<{ w: number; h: number; tear?: number }>();
+  useLayoutEffect(() => {
+    const svg = ref.current;
+    const ticket = svg?.parentElement;
+    if (!ticket) return;
+    const measure = () => {
+      const tear = ticket.querySelector<HTMLElement>(".tear");
+      const w = ticket.offsetWidth, h = ticket.offsetHeight;
+      const t = tear ? tear.offsetTop + tear.offsetHeight / 2 : undefined;
+      setBox((b) => (b && b.w === w && b.h === h && b.tear === t ? b : { w, h, tear: t }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(ticket);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <StylePager
-      code={pass.codes[0]}
-      value={pass.style ?? wallet}
-      title="Style for this ticket"
-      onClose={onDone}
-      onPick={async (s) => {
-        await updatePass(pass.id, { style: s === wallet ? undefined : s });
-        onDone();
-      }}
-    />
+    <svg ref={ref} className="t-outline" aria-hidden width={box?.w ?? 0} height={box?.h ?? 0}>
+      {box && <path d={outline(shape, box.w, box.h, box.tear)} />}
+    </svg>
   );
 }
 
-/** The ticket's face: head, tear line, the code in its frame, bit strip, and its two buttons. */
 export function TicketFace({ pass, current, stamping, onUse, onRestore, onPlain }: {
   pass: Pass; current: boolean; stamping: boolean; onUse: () => void; onRestore: () => void; onPlain: () => void;
 }) {
@@ -97,9 +108,11 @@ export function TicketFace({ pass, current, stamping, onUse, onRestore, onPlain 
   const bright = useTheme((s) => s.bright);
   const plainInk = useTheme((s) => colours(s).plainInk);
   const lit = bright && !!code && !pass.usedAt;
+  const shape = shapeOf(pass.category);
   return (
     <div className="face">
-        <div className="ticket">
+        <div className={`ticket shaped ${shape.line}${pass.usedAt || stamping ? " used" : ""}`} data-shape={pass.category}>
+        <TicketOutline shape={shape} />
         <TicketHead pass={pass} />
 
         <div className="tear" aria-hidden>
@@ -109,15 +122,15 @@ export function TicketFace({ pass, current, stamping, onUse, onRestore, onPlain 
         </div>
 
         <div className="t-code fit">
-          <Crop className="fit-box">
+          <Crop className="fit-box" loop={code && <CodeLoop text={code.text} running={current && !pass.usedAt && !stamping} />}>
             {code ? (
               lit ? (
                 <div className="lit">
                   {current && <LitPlate />}
-                  <QrImage code={code} style={pass.style} ink={plainInk} bg="transparent" />
+                  <QrImage code={code} ink={plainInk} bg="transparent" />
                 </div>
               ) : (
-                <QrImage code={code} style={pass.style} />
+                <QrImage code={code} />
               )
             ) : source ? (
               <img className="t-image" src={source} alt="" />
@@ -178,7 +191,6 @@ export function PlainView({ pass, original, onClose }: { pass: Pass; original: b
 
 export function Details({ pass, onAction }: { pass: Pass; onAction: (a: Action) => void }) {
   const t = ticketText(pass);
-  const style = useTheme((s) => pass.style ?? s.qrStyle);
   const source = useImageUrl(pass.sourceId);
   const code = pass.codes[0];
   const facts: [string, string][] = [];
@@ -204,8 +216,7 @@ export function Details({ pass, onAction }: { pass: Pass; onAction: (a: Action) 
         )}
       </dl>
       <div className="btn-row">
-        <button className="btn line" onClick={() => onAction("style")} disabled={!code}>Style · {QR_STYLES.find((s) => s.id === style)?.label}</button>
-        <button className="btn line" onClick={() => onAction("original")} disabled={!source && !code?.cropId}>Original</button>
+        <button className="btn line wide-flex" onClick={() => onAction("original")} disabled={!source && !code?.cropId}>Original</button>
       </div>
       <div className="btn-row">
         <button className="btn line" onClick={() => onAction("share")}>Share ticket</button>

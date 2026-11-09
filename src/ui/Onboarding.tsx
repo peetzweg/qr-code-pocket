@@ -1,21 +1,18 @@
 import { useState } from "react";
-import { setTheme, useTheme } from "../theme";
-import { StyleTrack } from "./StylePager";
-import { ColourPicker, SAMPLE, SampleCode } from "./ThemePicker";
+import { setTheme } from "../theme";
+import { ColourPicker, SampleCode } from "./ThemePicker";
 
-/** Three steps: what this is, your two colours, your code style. All of it can be changed later. */
+/** Two steps: what this is, and your colours (the one thing that's yours to choose; the rest is the house style). */
 export function Onboarding() {
   const [step, setStep] = useState(0);
-  const style = useTheme((t) => t.qrStyle);
-  const next = () => (step < 2 ? setStep(step + 1) : setTheme({ onboarded: true }));
+  const next = () => (step < 1 ? setStep(step + 1) : setTheme({ onboarded: true }));
   return (
     <div className="onboarding">
       <div className="ob-top">
         <span>QR Code Pocket</span>
-        <span className="kicker">{step + 1} / 3</span>
+        <span className="kicker">{step + 1} / 2</span>
       </div>
-      {step < 2 ? (
-        <div className="scroll ob-body" key={step}>
+      <div className="scroll ob-body" key={step}>
           {step === 0 ? (
             <>
               <h1 className="serif-xl">Every code, one wallet.</h1>
@@ -29,16 +26,10 @@ export function Onboarding() {
             </>
           )}
           <SampleCode />
-        </div>
-      ) : (
-        <div className="ob-styles">
-          <p className="lede ob-lede">Swipe through how your codes are printed. Same content; the plain code is always one tap away.</p>
-          <StyleTrack code={SAMPLE.codes[0]} value={style} onChange={(s) => setTheme({ qrStyle: s })} />
-        </div>
-      )}
+      </div>
       <div className="ob-foot">
         {step > 0 ? <button className="btn line" onClick={() => setStep(step - 1)}>Back</button> : <span />}
-        <button className="btn solid" onClick={next}>{step === 2 ? "Start" : "Next"}</button>
+        <button className="btn solid" onClick={next}>{step === 1 ? "Start" : "Next"}</button>
       </div>
     </div>
   );

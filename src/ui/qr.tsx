@@ -4,7 +4,7 @@ import "../scan/zxing"; // points zxing at the bundled wasm
 import { codeSvg, isLinear, isStacked } from "../scan/zxing";
 import type { Code } from "../store/db";
 import { colours, getTheme, useTheme } from "../theme";
-import { matrixFrom, qrArt, type Matrix, type QrStyle } from "./qrart";
+import { HOUSE_STYLE, matrixFrom, qrArt, type Matrix, type QrStyle } from "./qrart";
 
 const matrices = new Map<string, Promise<Matrix | undefined>>();
 
@@ -54,8 +54,7 @@ function codeUrl(code: Pick<Code, "text" | "format" | "bytes">, style: QrStyle, 
 export function useCodeUrl(code: Pick<Code, "text" | "format" | "bytes"> | undefined, style?: QrStyle, inkOverride?: string) {
   const themeInk = useTheme((t) => colours(t).codeFg);
   const ink = inkOverride ?? themeInk;
-  const wallet = useTheme((t) => t.qrStyle);
-  const s = style ?? wallet;
+  const s = style ?? HOUSE_STYLE;
   const [url, setUrl] = useState<string>();
   useEffect(() => {
     if (!code) return setUrl(undefined);
@@ -85,7 +84,7 @@ export function QrImage({ code, style, className = "", ink, bg }: { code: Pick<C
 export function prepareCode(code: Pick<Code, "text" | "format" | "bytes">, style?: QrStyle): Promise<void> {
   const t = getTheme();
   const c = colours(t);
-  const s = style ?? t.qrStyle;
+  const s = style ?? HOUSE_STYLE;
   return Promise.all(
     [c.codeFg, c.plainInk].map((ink) =>
       codeUrl(code, s, ink).then((url) => {

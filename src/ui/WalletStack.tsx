@@ -5,7 +5,7 @@ import { markUsed, reorder, restore } from "../store/passes";
 import { Close } from "./icons";
 import { Postmark, postmarkDate } from "./Postmark";
 import { Sheet } from "./Sheet";
-import { BrightToggle, Details, EditTicket, leave, PlainView, shareTicket, StyleForTicket, TicketFace, useWakeLock, type Action } from "./TicketParts";
+import { BrightToggle, Details, EditTicket, leave, PlainView, shareTicket, TicketFace, useWakeLock, type Action } from "./TicketParts";
 
 /**
  * The wallet, after Apple Wallet's: one scene, no separate screen.
@@ -77,7 +77,7 @@ export function WalletStack({ passes, onToast, onSelecting, reorderable = false 
   const [sel, setSel] = useState<string>();
   const [wrapTop, setWrapTop] = useState(0);
   const [stamping, setStamping] = useState<string>();
-  const [overlay, setOverlay] = useState<"plain" | "original" | "style" | "edit">();
+  const [overlay, setOverlay] = useState<"plain" | "original" | "edit">();
   const [pressed, setPressed] = useState<string>();
   const [drag, setDrag] = useState<{ id: string; to: number; y: number }>();
   const grip = useRef<Grip | undefined>(undefined);
@@ -356,7 +356,6 @@ export function WalletStack({ passes, onToast, onSelecting, reorderable = false 
           </Sheet>
         )}
       </AnimatePresence>
-      {selected && overlay === "style" && selected.codes[0] && <StyleForTicket pass={selected} onDone={() => setOverlay(undefined)} />}
     </div>
   );
 }
