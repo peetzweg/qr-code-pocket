@@ -51,9 +51,16 @@ function codeUrl(code: Pick<Code, "text" | "format" | "bytes">, style: QrStyle, 
   return u;
 }
 
+/**
+ * Barcodes (EAN, Code 128, PDF417…) are always printed dark on white: checkout laser scanners can't
+ * read them inverted, so Flood's light-on-colour is for QR codes only.
+ */
+export const barcodeInk = (format: string, ink: string, plain: string) => (isQr(format) ? ink : plain);
+
 export function useCodeUrl(code: Pick<Code, "text" | "format" | "bytes"> | undefined, style?: QrStyle, inkOverride?: string) {
   const themeInk = useTheme((t) => colours(t).codeFg);
-  const ink = inkOverride ?? themeInk;
+  const plain = useTheme((t) => colours(t).plainInk);
+  const ink = code && !isQr(code.format) ? plain : inkOverride ?? themeInk;
   const s = style ?? HOUSE_STYLE;
   const [url, setUrl] = useState<string>();
   useEffect(() => {
@@ -86,7 +93,7 @@ export function prepareCode(code: Pick<Code, "text" | "format" | "bytes">, style
   const c = colours(t);
   const s = style ?? HOUSE_STYLE;
   return Promise.all(
-    [c.codeFg, c.plainInk].map((ink) =>
+    [barcodeInk(code.format, c.codeFg, c.plainInk), c.plainInk].map((ink) =>
       codeUrl(code, s, ink).then((url) => {
         if (!url) return;
         const img = new Image();

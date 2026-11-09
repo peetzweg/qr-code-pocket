@@ -1,17 +1,20 @@
-import type { Pass } from "../store/db";
+import { imageUrl, type Pass } from "../store/db";
 import { colours, getTheme } from "../theme";
 import { longDate, prettyFormat } from "./format";
 import { postmarkDate, postmarkSvg } from "./Postmark";
 import { bytesOf, microline, serialOf } from "./print";
-import { codeSvgArt } from "./qr";
+import { barcodeInk, codeSvgArt, isQr } from "./qr";
 import { HOUSE_STYLE } from "./qrart";
+import { outline, shapeOf } from "./shapes";
 import { ticketText } from "./ticketText";
 
 /**
- * The ticket as a picture to share: the same print as on screen (title, time, notched tear line with
- * microprint, the styled code in its crop frame, the bit strip and serial), in the wallet's two
- * colours, at 1080 × 1620. Drawn on a canvas with the app's own fonts.
+ * The ticket as a picture to share: the same print as on screen (its kind's die-cut outline, title,
+ * time, tear line with microprint, the code in its running microprint frame, the stamp if used, the
+ * bit strip and serial), in the wallet's two colours, at 1080 × 1620. Drawn on a canvas with the
+ * app's own fonts. Geometry from the app is scaled by K, so the shapes match exactly.
  */
+const K = 2.6;
 const W = 1080;
 const H = 1620;
 const SERIF = '"Newsreader Variable", "Iowan Old Style", Georgia, serif';
@@ -80,9 +83,85 @@ function dashed(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: numbe
   ctx.stroke();
 }
 
+/**
+ * The code's content set round a rounded rectangle, clockwise from the middle of the top-left corner
+ * (where a dot covers the join), like the running frame on an open ticket (CodeLoop.tsx), stood still.
+ */
+function loopText(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, R: number, text: string, size: number, fg: string, bg: string) {
+  type Seg = { len: number; at: (d: number) => [number, number, number] };
+  const arc = (cx: number, cy: number, a0: number, a1: number): Seg => ({
+    len: R * (a1 - a0),
+    at: (d) => {
+      const a = a0 + d / R;
+      return [cx + R * Math.cos(a), cy + R * Math.sin(a), a + Math.PI / 2];
+    },
+  });
+  const line = (ax: number, ay: number, bx: number, by: number): Seg => {
+    const len = Math.hypot(bx - ax, by - ay);
+    const ang = Math.atan2(by - ay, bx - ax);
+    return { len, at: (d) => [ax + ((bx - ax) * d) / len, ay + ((by - ay) * d) / len, ang] };
+  };
+  const PI = Math.PI;
+  const segs = [
+    arc(x0 + R, y0 + R, -0.75 * PI, -0.5 * PI), line(x0 + R, y0, x1 - R, y0),
+    arc(x1 - R, y0 + R, -0.5 * PI, 0), line(x1, y0 + R, x1, y1 - R),
+    arc(x1 - R, y1 - R, 0, 0.5 * PI), line(x1 - R, y1, x0 + R, y1),
+    arc(x0 + R, y1 - R, 0.5 * PI, PI), line(x0, y1 - R, x0, y0 + R),
+    arc(x0 + R, y0 + R, PI, 1.25 * PI),
+  ];
+  const lap = segs.reduce((a, g) => a + g.len, 0);
+  const at = (d: number) => {
+    for (const g of segs) {
+      if (d <= g.len) return g.at(d);
+      d -= g.len;
+    }
+    return segs[segs.length - 1].at(segs[segs.length - 1].len);
+  };
+  ctx.save();
+  ctx.font = `500 ${size}px ${MONO}`;
+  spaced(ctx, 0);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  const unit = `${text.replace(/\s+/g, " ").trim() || "QR CODE POCKET"} · `;
+  const clear = size * 1.1;
+  let d = clear;
+  for (let i = 0; ; i++) {
+    const ch = unit[i % unit.length];
+    const adv = ctx.measureText(ch).width;
+    if (d + adv > lap - clear) break;
+    const [x, y, a] = at(d + adv / 2);
+    ctx.setTransform(ctx.getTransform().translate(x, y).rotate((a * 180) / PI));
+    ctx.fillText(ch, -adv / 2, 0);
+    ctx.setTransform(ctx.getTransform().rotate((-a * 180) / PI).translate(-x, -y));
+    d += adv;
+  }
+  ctx.restore();
+  // The dot over the join.
+  const [dx, dy] = at(0);
+  ctx.beginPath();
+  ctx.arc(dx, dy, 4.2 * K, 0, 2 * PI);
+  ctx.fillStyle = fg;
+  ctx.strokeStyle = bg;
+  ctx.lineWidth = 2.5 * K;
+  ctx.stroke();
+  ctx.fill();
+}
+
+async function loadImage(id: string): Promise<HTMLImageElement | undefined> {
+  const url = await imageUrl(id);
+  if (!url) return;
+  const img = new Image();
+  img.src = url;
+  return img.decode().then(() => img, () => undefined);
+}
+
 export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   const theme = getTheme();
-  const { fg, bg, codeFg } = colours(theme);
+  const { fg, bg, codeFg, plainInk } = colours(theme);
+  const shape = shapeOf(pass.category);
+  const dotted = shape.line === "dotted";
+  const used = !!pass.usedAt;
+  const logo = pass.logoId ? await loadImage(pass.logoId) : undefined;
   const code = pass.codes[codeIndex];
   const t = ticketText(pass);
   const bytes = code ? bytesOf(code.text, code.bytes) : new TextEncoder().encode(pass.title);
@@ -99,8 +178,6 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
 
   // The ticket.
   const X = 60, Y = 60, TW = W - 120, TH = H - 150, P = 56;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(X, Y, TW, TH);
 
   // Kicker.
   ctx.font = `500 26px ${MONO}`;
@@ -109,7 +186,7 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   ctx.textAlign = "left";
   ctx.fillText([t.issuer, t.cat.label !== t.issuer ? t.cat.label : undefined].filter(Boolean).join(" · ").toUpperCase(), X + P, Y + 84);
   ctx.textAlign = "right";
-  ctx.fillText((pass.date ? longDate(pass.date) : "Undated").toUpperCase(), X + TW - P, Y + 84);
+  ctx.fillText((pass.category === "card" ? t.day ?? "" : pass.date ? longDate(pass.date) : "Undated").toUpperCase(), X + TW - P, Y + 84);
   ctx.textAlign = "left";
   spaced(ctx, 0);
 
@@ -118,7 +195,7 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   let lines: string[] = [];
   for (; size >= 54; size -= 6) {
     ctx.font = `400 ${size}px ${SERIF}`;
-    lines = wrap(ctx, pass.title || "Untitled", TW - 2 * P);
+    lines = wrap(ctx, pass.title || "Untitled", TW - 2 * P - (logo ? 190 : 0));
     if (lines.length <= 2) break;
   }
   lines = lines.slice(0, 3);
@@ -146,20 +223,33 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
     y += 70;
   }
 
-  // Tear line with notches and microprint.
-  const tearY = y + 24;
-  ctx.lineWidth = 2;
-  dashed(ctx, X, tearY, X + TW, tearY, 24, 15, 11);
-  for (const [cx, start, end] of [[X, -Math.PI / 2, Math.PI / 2], [X + TW, Math.PI / 2, (3 * Math.PI) / 2]] as const) {
-    ctx.fillStyle = bg;
+  // A card's logo, full colour, like an app icon.
+  if (logo) {
+    const ls = 60 * K, lx = X + TW - 16 * K - ls, ly = Y + 40 * K;
+    ctx.save();
     ctx.beginPath();
-    ctx.arc(cx, tearY, 24, start, end);
+    ctx.roundRect(lx, ly, ls, ls, 14 * K);
+    ctx.fillStyle = "#fff";
     ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(cx, tearY, 24, start, end);
-    ctx.stroke();
+    ctx.clip();
+    const r = Math.min(ls / logo.naturalWidth, ls / logo.naturalHeight);
+    const iw = logo.naturalWidth * r, ih = logo.naturalHeight * r;
+    ctx.drawImage(logo, lx + (ls - iw) / 2, ly + (ls - ih) / 2, iw, ih);
+    ctx.restore();
   }
+
+  // The ticket's outline (its kind's shape, notches at the tear), then the tear line, dashed or dotted.
+  const tearY = y + 24;
+  ctx.save();
+  ctx.translate(X, Y);
+  ctx.scale(K, K);
+  ctx.lineWidth = 3 / K;
+  ctx.lineJoin = "miter";
+  ctx.stroke(new Path2D(outline(shape, TW / K, TH / K, (tearY - Y) / K)));
+  ctx.restore();
+  ctx.lineWidth = 2;
+  if (dotted) dashed(ctx, X, tearY, X + TW, tearY, 16 * K, 1.5 * K, 3 * K);
+  else dashed(ctx, X, tearY, X + TW, tearY, 16 * K, 15, 11);
   ctx.fillStyle = fg;
   ctx.font = `500 12px ${MONO}`;
   spaced(ctx, 1.5);
@@ -179,24 +269,45 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   const qx = Math.round(X + (TW - s) / 2);
   const qy = Math.round(areaTop + (areaBottom - areaTop - s) / 2);
   if (code) {
-    const svg = await codeSvgArt(code, HOUSE_STYLE, codeFg);
-    if (svg) ctx.drawImage(await loadSvg(svg, s), qx, qy, s, s);
+    const svg = await codeSvgArt(code, HOUSE_STYLE, barcodeInk(code.format, codeFg, plainInk));
+    // A used code steps back under the stamp, as in the app.
+    ctx.globalAlpha = used ? 0.22 : 1;
+    if (svg) {
+      if (isQr(code.format)) ctx.drawImage(await loadSvg(svg, s), qx, qy, s, s);
+      else {
+        // A barcode keeps its proportions, on a white plate.
+        const vb = svg.match(/viewBox="[\d.-]+[\s,]+[\d.-]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/);
+        const aspect = vb ? +vb[1] / +vb[2] : 3;
+        const iw = aspect >= 1 ? s : s * aspect, ih = aspect >= 1 ? s / aspect : s;
+        const img = await loadSvg(svg, Math.round(iw), Math.round(ih));
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(qx + (s - iw) / 2, qy + (s - ih) / 2, iw, ih);
+        ctx.drawImage(img, qx + (s - iw) / 2, qy + (s - ih) / 2, iw, ih);
+        ctx.fillStyle = fg;
+      }
+    }
+    ctx.globalAlpha = used ? 0.35 : 1;
+    // Frame: the code's content as microprint round it, as on an open ticket.
+    const o = 10 * K;
+    loopText(ctx, qx - o, qy - o, qx + s + o, qy + s + o, 11 * K, code.text, 5.6 * K, fg, bg);
+    ctx.globalAlpha = 1;
+  } else {
+    // An image ticket keeps the plain crop frame: + marks, dashes (or dots) between them.
+    const o = 22, arm = 15;
+    ctx.lineWidth = 2;
+    for (const [x1, y1, x2, y2] of [
+      [qx - o, qy - o, qx + s + o, qy - o], [qx - o, qy + s + o, qx + s + o, qy + s + o],
+      [qx - o, qy - o, qx - o, qy + s + o], [qx + s + o, qy - o, qx + s + o, qy + s + o],
+    ]) dotted ? dashed(ctx, x1, y1, x2, y2, arm, 1.5 * K, 3 * K) : dashed(ctx, x1, y1, x2, y2, arm, arm, 11);
+    ctx.beginPath();
+    for (const [cx, cy] of [[qx - o, qy - o], [qx + s + o, qy - o], [qx - o, qy + s + o], [qx + s + o, qy + s + o]]) {
+      ctx.moveTo(cx - arm, cy);
+      ctx.lineTo(cx + arm, cy);
+      ctx.moveTo(cx, cy - arm);
+      ctx.lineTo(cx, cy + arm);
+    }
+    ctx.stroke();
   }
-  // Frame: + marks on the corners, dashes half as long as a + is wide, evenly spaced between them.
-  const o = 22, arm = 15;
-  ctx.lineWidth = 2;
-  for (const [x1, y1, x2, y2] of [
-    [qx - o, qy - o, qx + s + o, qy - o], [qx - o, qy + s + o, qx + s + o, qy + s + o],
-    [qx - o, qy - o, qx - o, qy + s + o], [qx + s + o, qy - o, qx + s + o, qy + s + o],
-  ]) dashed(ctx, x1, y1, x2, y2, arm, arm, 11);
-  ctx.beginPath();
-  for (const [cx, cy] of [[qx - o, qy - o], [qx + s + o, qy - o], [qx - o, qy + s + o], [qx + s + o, qy + s + o]]) {
-    ctx.moveTo(cx - arm, cy);
-    ctx.lineTo(cx + arm, cy);
-    ctx.moveTo(cx, cy - arm);
-    ctx.lineTo(cx, cy + arm);
-  }
-  ctx.stroke();
   if (pass.usedAt) {
     const ps = Math.round(s * 0.78);
     const pm = await loadSvg(postmarkSvg(postmarkDate(pass.usedAt), pass.from ?? pass.place, fg, bg, ps), ps, ps);
