@@ -27,7 +27,7 @@ no sign-up, and your codes never leave your phone.
 
 ## Save any QR code, from anywhere
 
-- **From a screenshot.** Pick it from Photos; the QR code is found and decoded on your phone.
+- **From a screenshot.** Pick it from Photos; the QR code or barcode (EAN, Code 128…) is found and decoded on your phone.
 - **From a PDF ticket.** E-tickets from email: every page is scanned, and the PDF's text is read for the details.
 - **With the camera.** Scan a printed voucher or a code on someone else's screen.
 - **Paste or type.** A copied image, a link, or a booking number to turn into a QR code.
@@ -66,13 +66,15 @@ Most of the time you just confirm. The details come from two places, and each va
 - **Loyalty and membership cards** get their own tab: add the store's website and its logo is fetched,
   in full colour, and kept on the card offline. The tab only appears once you have a card.
 
-## Printed in your style
+## Printed in the house style
 
-Every ticket is printed in exactly two colours, like a print job. Pick a colour from the omakase set of
-traditional Japanese colours (墨 Sumi, 藍 Ai, 朱 Shu, 抹茶 Matcha and more) or your own, and a look for day
-and for night. Codes are redrawn from their exact content in one of nine module styles (classic, tiles,
-liquid, soft, dots, molecule, pills, engraved, halftone), re-encoded with high error correction. Every
-style is checked against a real decoder (`scripts/qr-scan-test.mjs`).
+Every ticket is printed in exactly two colours, like a print job. The colour is yours: pick one from the
+omakase set of traditional Japanese colours (墨 Sumi, 藍 Ai, 朱 Shu, 抹茶 Matcha and more) or your own, with a
+look for day and for night. Everything else is the house's choice, omakase: each kind of ticket has its
+own die-cut shape (clipped corners on trains, rounded boarding passes, scalloped admissions, a receipt's
+torn edge for food), the code is redrawn from its exact content in one module style with high error
+correction, the code's own content runs round it as microprint, and a used ticket gets a rubber date
+stamp. The redrawn code is checked against a real decoder (`scripts/qr-scan-test.mjs`).
 
 ## Private by design
 

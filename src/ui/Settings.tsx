@@ -4,10 +4,7 @@ import { exportBackup, importBackup } from "../store/backup";
 import { usePasses } from "../store/passes";
 import { Download, Upload } from "./icons";
 import { Sheet } from "./Sheet";
-import { setTheme, useTheme } from "../theme";
-import { QR_STYLES } from "./qrart";
-import { StylePager } from "./StylePager";
-import { ColourPicker, SAMPLE, SampleCode } from "./ThemePicker";
+import { ColourPicker } from "./ThemePicker";
 
 export function Settings({ onClose, shareReady, focusShare }: { onClose: () => void; shareReady: boolean; focusShare?: boolean }) {
   const passes = usePasses((s) => s.passes);
@@ -17,8 +14,6 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
   const [usage, setUsage] = useState<string>();
   const [persisted, setPersisted] = useState<boolean>();
   const [copied, setCopied] = useState(false);
-  const [styling, setStyling] = useState(false);
-  const style = useTheme((t) => t.qrStyle);
   const [signed, setSigned] = useState(false);
   const shortcutUrl = `${import.meta.env.BASE_URL}Add-to-Kippu.shortcut`;
 
@@ -55,11 +50,6 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
         <section>
           <h3>Colour</h3>
           <ColourPicker />
-        </section>
-        <section>
-          <h3>Code style</h3>
-          <SampleCode />
-          <button className="btn line wide" onClick={() => setStyling(true)}>{QR_STYLES.find((s) => s.id === style)?.label} · swipe through styles →</button>
         </section>
         <section>
           <h3>Your pocket</h3>
@@ -154,7 +144,6 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
           </p>
         </section>
       </div>
-      {styling && <StylePager code={SAMPLE.codes[0]} value={style} title="Wallet style" onClose={() => setStyling(false)} onPick={(s) => { setTheme({ qrStyle: s }); setStyling(false); }} />}
     </Sheet>
   );
 }

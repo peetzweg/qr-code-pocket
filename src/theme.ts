@@ -1,5 +1,4 @@
 import { createStore, useStore } from "./store";
-import type { QrStyle } from "./ui/qrart";
 
 /**
  * Two colours, always: one ink and one paper.
@@ -29,7 +28,6 @@ export interface Theme {
   day: Look;
   night: Look;
   appearance: Appearance;
-  qrStyle: QrStyle;
   /** Light the code up when a ticket opens (HDR white behind it). */
   bright: boolean;
   onboarded: boolean;
@@ -71,7 +69,6 @@ const DEFAULT: Theme = {
   day: { colour: "sumi", fill: "line" },
   night: { colour: "sumi", fill: "line" },
   appearance: "auto",
-  qrStyle: "liquid",
   bright: true,
   onboarded: false,
 };

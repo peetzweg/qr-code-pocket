@@ -4,6 +4,7 @@ import { longDate, prettyFormat } from "./format";
 import { postmarkDate, postmarkSvg } from "./Postmark";
 import { bytesOf, microline, serialOf } from "./print";
 import { codeSvgArt } from "./qr";
+import { HOUSE_STYLE } from "./qrart";
 import { ticketText } from "./ticketText";
 
 /**
@@ -178,7 +179,7 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   const qx = Math.round(X + (TW - s) / 2);
   const qy = Math.round(areaTop + (areaBottom - areaTop - s) / 2);
   if (code) {
-    const svg = await codeSvgArt(code, pass.style ?? theme.qrStyle, codeFg);
+    const svg = await codeSvgArt(code, HOUSE_STYLE, codeFg);
     if (svg) ctx.drawImage(await loadSvg(svg, s), qx, qy, s, s);
   }
   // Frame: + marks on the corners, dashes half as long as a + is wide, evenly spaced between them.
@@ -197,8 +198,13 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   }
   ctx.stroke();
   if (pass.usedAt) {
-    const pm = await loadSvg(postmarkSvg(postmarkDate(pass.usedAt), pass.from ?? pass.place, fg, bg, Math.round(s * 0.66)), Math.round(s * 0.66), Math.round((s * 0.66 * 120) / 170));
-    ctx.drawImage(pm, qx + s * 0.4, qy + s * 0.04);
+    const ps = Math.round(s * 0.78);
+    const pm = await loadSvg(postmarkSvg(postmarkDate(pass.usedAt), pass.from ?? pass.place, fg, bg, ps), ps, ps);
+    ctx.save();
+    ctx.translate(qx + s / 2, qy + s / 2);
+    ctx.rotate(-0.21);
+    ctx.drawImage(pm, -ps / 2, -ps / 2);
+    ctx.restore();
   }
 
   // Bit strip and serial.

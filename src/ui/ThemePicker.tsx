@@ -30,7 +30,6 @@ export function SampleCode() {
 /** A small ticket in a look's two colours: what Day or Night will look like, code included. */
 export function LookPreview({ mode }: { mode: Mode }) {
   const look = useTheme((t) => t[mode]);
-  const style = useTheme((t) => t.qrStyle);
   const c = coloursFor(look, mode);
   return (
     <div className="look-preview" style={{ "--fg": c.fg, "--bg": c.bg, background: c.bg, color: c.fg } as React.CSSProperties}>
@@ -40,7 +39,7 @@ export function LookPreview({ mode }: { mode: Mode }) {
         <span className="lp-time">10:03</span>
       </div>
       <Crop className="lp-code">
-        <QrImage code={SAMPLE.codes[0]} style={style} ink={c.codeFg} bg={c.codeBg} />
+        <QrImage code={SAMPLE.codes[0]} ink={c.codeFg} bg={c.codeBg} />
       </Crop>
     </div>
   );

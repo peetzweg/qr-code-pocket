@@ -4,9 +4,10 @@ import type { ReactNode } from "react";
  * A print proof's frame round the code: four dashed edges that stop short of the corners, and a +
  * registration mark centred where each pair of edges would meet, its arms in line with them.
  */
-export function Crop({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function Crop({ children, className = "", loop }: { children: ReactNode; className?: string; loop?: ReactNode }) {
   return (
-    <div className={`crop ${className}`}>
+    <div className={`crop ${className}${loop ? " looping" : ""}`}>
+      {loop}
       <i className="edge t" />
       <i className="edge b" />
       <i className="edge l" />

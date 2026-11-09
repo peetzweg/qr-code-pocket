@@ -122,7 +122,7 @@ a { color: inherit; }
 .card:not(.open) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .card.lifted { cursor: grabbing; }
 .card-details { padding: 0 2px calc(var(--safe-bottom) + 24px); }
-.card-postmark { position: absolute; right: 12px; top: 40px; width: 96px; color: var(--fg); pointer-events: none; --paper-under: var(--bg); }
+.card-postmark { position: absolute; right: 8px; top: 14px; width: 112px; height: 112px; color: var(--fg); pointer-events: none; rotate: -12deg; z-index: 2; }
 .wallet-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: calc(var(--safe-top) + 6px) 12px 4px; max-width: 680px; margin: 0 auto; }
 .wallet-bar > :last-child { justify-self: end; }
 .qr { background: var(--code-bg); }
@@ -152,7 +152,7 @@ a { color: inherit; }
 .ticket { flex: 1; min-height: 0; display: flex; flex-direction: column; border: var(--rule); position: relative; background: var(--bg); }
 .tear { position: relative; height: 18px; display: flex; align-items: center; margin: 0 -1px; flex: none; }
 /* Same dash rhythm as the crop frame; the notches stand in for the + marks. */
-.tear::before { content: ""; position: absolute; left: 15px; right: 10px; top: 50%; height: 1px; background: linear-gradient(to right, var(--fg) 6.5px, transparent 0) 0 0 / 11.5px 1px round; }
+.tear::before { content: ""; position: absolute; left: 15px; right: 10px; top: 50%; height: 1px; background: linear-gradient(to right, var(--fg) var(--t-dash, 6.5px), transparent 0) 0 0 / calc(var(--t-dash, 6.5px) + var(--t-gap, 5px)) 1px round; }
 .tear-micro { position: absolute; left: 18px; right: 18px; top: calc(50% + 3px); font: 4.5px/1 var(--mono); letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; }
 .notch { position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: var(--rule); translate: 0 -50%; }
 .notch.l { left: -10px; clip-path: inset(0 0 0 50%); } .notch.r { right: -10px; clip-path: inset(0 50% 0 0); }
@@ -171,7 +171,12 @@ a { color: inherit; }
 .icon-btn.bright { border: 1px solid transparent; }
 .icon-btn.bright.on { border-color: var(--fg); }
 .plain .lit-video { position: fixed; inset: 0; z-index: -1; }
-.t-postmark { position: absolute; right: -6%; top: 6%; width: 64%; color: var(--fg); pointer-events: none; --paper-under: var(--bg); }
+.t-postmark { position: absolute; left: 50%; top: 50%; width: 80%; aspect-ratio: 1; margin: -40% 0 0 -40%; color: var(--fg); pointer-events: none; }
+.t-postmark .postmark { rotate: -12deg; }
+.postmark { display: block; }
+.postmark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+/* A used code steps back so the stamp reads; it's still there, faintly, as a keepsake. */
+.ticket.used .t-code .qr { opacity: 0.22; transition: opacity 500ms ease 250ms; }
 .t-foot { padding: 0 16px 12px; flex: none; }
 .t-foot .t-bits { margin: 0 2px; }
 .t-bits { height: 14px; }
@@ -188,7 +193,7 @@ a { color: inherit; }
  * are even, and the tiles stretch a hair (background-repeat: round) so every edge holds a whole
  * number of dashes: an edge starts one gap after the + and its last dash ends one gap before the next.
  */
-.crop { --o: 10px; --arm: 6.5px; --dash: 6.5px; --gap: 5px; position: relative; }
+.crop { --o: 10px; --arm: 6.5px; --dash: var(--t-dash, 6.5px); --gap: var(--t-gap, 5px); position: relative; }
 .crop .qr { width: 100%; height: 100%; }
 .crop .edge { position: absolute; pointer-events: none; background-repeat: round; }
 .crop .edge.t, .crop .edge.b {
@@ -213,11 +218,6 @@ a { color: inherit; }
 .crop .bl { left: calc(-1 * var(--o) - 6px); bottom: calc(-1 * var(--o) - 6px); }
 .crop .br { right: calc(-1 * var(--o) - 6px); bottom: calc(-1 * var(--o) - 6px); }
 
-.style-track-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.style-page { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; min-height: 0; padding: 0 18px; }
-.style-head { display: flex; flex-direction: column; gap: 6px; padding: 8px 0 4px; }
-.dots { display: flex; justify-content: center; gap: 6px; padding: 8px 0 4px; flex: none; }
-.dots i { width: 6px; height: 6px; border: 1px solid var(--fg); transition: background-color 160ms ease; }
 .dots i.on { background: var(--fg); }
 .fs-foot { padding: 4px 18px calc(var(--safe-bottom) + 14px); flex: none; }
 .fs-foot .btn.wide { margin-top: 4px; }
@@ -325,8 +325,6 @@ a { color: inherit; }
 
 /* ---------- Onboarding ---------- */
 .sample { width: min(50vw, 200px); aspect-ratio: 1; margin: 30px auto 16px; }
-.ob-styles { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.ob-lede { padding: 18px 18px 0; }
 .onboarding { height: 100%; display: flex; flex-direction: column; max-width: 680px; margin: 0 auto; }
 .ob-top { display: flex; justify-content: space-between; padding: calc(var(--safe-top) + 12px) 18px 10px; font-size: 13px; font-weight: 500; background: var(--dashes) 0 100% / 11.5px 1px repeat-x; }
 .ob-body { display: flex; flex-direction: column; gap: 16px; padding-top: 26px; animation: rise 320ms var(--ease-out) both; }
@@ -384,3 +382,24 @@ details summary { cursor: pointer; font-weight: 600; margin: 10px 0 4px; }
 
 .review-ticket { position: relative; }
 .review-logo { top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 10px; }
+
+/* ---------- Ticket shapes (shapes.ts): the outline is an SVG, so the box itself draws nothing ---------- */
+.ticket.shaped { border: 0; background: none; }
+.ticket.shaped .notch { display: none; }
+.t-outline { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.t-outline path { fill: var(--bg); stroke: var(--fg); stroke-width: 1px; stroke-linejoin: miter; }
+.ticket.shaped > :not(.t-outline) { position: relative; }
+.ticket.shaped.dotted { --t-dash: 1.5px; --t-gap: 3px; }
+.ticket.shaped .tear::before { left: 16px; right: 16px; }
+/* Edges cut into the paper: keep the print clear of them. */
+.ticket[data-shape="sight"] .t-head { padding-top: 18px; }
+.ticket[data-shape="food"] .t-head { padding-top: 17px; }
+.ticket[data-shape="sight"] .t-foot { padding-bottom: 16px; }
+.card:not(.open) .ticket.used .t-title { padding-right: 104px; }
+
+/* The running microprint frame (CodeLoop.tsx) replaces the dashed edges and + marks. */
+.crop.looping > .edge, .crop.looping > .plus { display: none; }
+.code-loop { position: absolute; left: calc(-1 * var(--o) - 8px); top: calc(-1 * var(--o) - 8px); overflow: visible; pointer-events: none; }
+.code-loop text { font-family: var(--mono); fill: var(--fg); letter-spacing: 0; }
+.code-loop-dot { fill: var(--fg); stroke: var(--bg); stroke-width: 2.5px; paint-order: stroke; }
+.ticket.used .code-loop { opacity: 0.35; }
