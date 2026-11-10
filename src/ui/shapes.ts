@@ -10,7 +10,7 @@ import type { Category } from "../categories";
  * - Event: scooped corners, an "admit one" stub.
  * - Food: a zigzag top edge, torn off a receipt printer.
  * - Stay: small rounded corners, a key card.
- * - Card: card radius.
+ * - Card, Wi-Fi: card radius (they live together in Cards).
  * - Other (Wi-Fi, links): plain and square.
  *
  * Lines (tear, crop frame) are dashed on travel tickets and dotted on the rest.
@@ -35,6 +35,7 @@ const SHAPES: Record<Category, Shape> = {
   food: { corner: { kind: "square" }, top: "zigzag", bottom: "straight", notches: false, line: "dotted" },
   stay: { corner: { kind: "round", r: 7 }, top: "straight", bottom: "straight", notches: false, line: "dotted" },
   card: { corner: { kind: "round", r: 18 }, top: "straight", bottom: "straight", notches: false, line: "dotted" },
+  wifi: { corner: { kind: "round", r: 18 }, top: "straight", bottom: "straight", notches: false, line: "dotted" },
   other: { corner: { kind: "square" }, top: "straight", bottom: "straight", notches: false, line: "dotted" },
 };
 

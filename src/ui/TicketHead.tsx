@@ -1,4 +1,4 @@
-import { isCard } from "../categories";
+import { isKept } from "../categories";
 import type { Pass } from "../store/db";
 import { useImageUrl } from "./CodeView";
 import { CategoryIcon } from "./icons";
@@ -12,7 +12,7 @@ import { countdown, ticketText } from "./ticketText";
 export function TicketHead({ pass, showCountdown = true }: { pass: Pass; showCountdown?: boolean }) {
   const t = ticketText(pass);
   const cd = showCountdown && !pass.usedAt ? countdown(pass) : undefined;
-  const card = isCard(pass.category);
+  const card = isKept(pass.category);
   const logo = useImageUrl(pass.logoId);
   return (
     <header className={`t-head${logo ? " has-logo" : ""}`}>

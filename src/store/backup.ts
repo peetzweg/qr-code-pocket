@@ -21,12 +21,12 @@ export async function exportBackup(): Promise<File> {
   const images = (await d.getAll("images")).map((img) => ({ id: img.id, type: img.type, data: b64(img.data) }));
   const json = JSON.stringify({ app: "kippu", version: 1, exportedAt: new Date().toISOString(), passes, images });
   const day = new Date().toISOString().slice(0, 10);
-  return new File([json], `kippu-backup-${day}.json`, { type: "application/json" });
+  return new File([json], `qr-code-pocket-backup-${day}.json`, { type: "application/json" });
 }
 
 export async function importBackup(file: File): Promise<number> {
   const data = JSON.parse(await file.text());
-  if (data?.app !== "kippu" || !Array.isArray(data.passes)) throw new Error("That isn't a Kippu backup.");
+  if (data?.app !== "kippu" || !Array.isArray(data.passes)) throw new Error("That isn't a QR Code Pocket backup.");
   const d = await db;
   const tx = d.transaction(["passes", "images"], "readwrite");
   let added = 0;

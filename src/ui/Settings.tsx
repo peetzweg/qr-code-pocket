@@ -15,7 +15,7 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
   const [persisted, setPersisted] = useState<boolean>();
   const [copied, setCopied] = useState(false);
   const [signed, setSigned] = useState(false);
-  const shortcutUrl = `${import.meta.env.BASE_URL}Add-to-Kippu.shortcut`;
+  const shortcutUrl = `${import.meta.env.BASE_URL}Add-to-Pocket.shortcut`;
 
   useEffect(() => {
     navigator.storage?.estimate?.().then((e) => e.usage && setUsage(`${(e.usage / 1024 / 1024).toFixed(1)} MB`));
@@ -28,7 +28,7 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
     const f = await exportBackup();
     if (navigator.canShare?.({ files: [f] })) {
       try {
-        await navigator.share({ files: [f], title: "Kippu backup" });
+        await navigator.share({ files: [f], title: "QR Code Pocket backup" });
       } catch {
         /* cancelled */
       }
@@ -66,20 +66,20 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
           <h3>Add from the share sheet</h3>
           {shareReady ? (
             <>
-              <p className="small">iPhone doesn't let Home Screen web apps appear in the share sheet, so a Shortcut does it: share a screenshot or PDF to <strong>Add to Kippu</strong>, then open Kippu and it's there.</p>
+              <p className="small">iPhone doesn't let Home Screen web apps appear in the share sheet, so a Shortcut does it: share a screenshot or PDF to <strong>Add to Pocket</strong>, then open the app and it's there.</p>
               {signed && (
-                <a className="btn solid wide" href={shortcutUrl} download="Add to Kippu.shortcut" target="_blank" rel="noreferrer">
-                  Get the “Add to Kippu” shortcut
+                <a className="btn solid wide" href={shortcutUrl} download="Add to Pocket.shortcut" target="_blank" rel="noreferrer">
+                  Get the “Add to Pocket” shortcut
                 </a>
               )}
               <details className="small" open={!signed}>
                 <summary>{signed ? "Or build it yourself" : "Build the shortcut"}</summary>
               <ol className="steps small">
-                <li>Open <strong>Shortcuts</strong>, tap <strong>+</strong>, name it <strong>Add to Kippu</strong>.</li>
+                <li>Open <strong>Shortcuts</strong>, tap <strong>+</strong>, name it <strong>Add to Pocket</strong>.</li>
                 <li>Tap the <strong>ⓘ</strong> (or the name) and turn on <strong>Show in Share Sheet</strong>. Set it to receive <strong>Images</strong> and <strong>PDFs</strong>.</li>
                 <li>Add <strong>Repeat with Each</strong> item in <em>Shortcut Input</em>.</li>
                 <li>Inside it, add <strong>Get Contents of URL</strong> with the address below. Show more: Method <strong>POST</strong>, Request Body <strong>File</strong>, File: <em>Repeat Item</em>.</li>
-                <li>Optional: after the repeat, <strong>Show Notification</strong> “Added to Kippu”.</li>
+                <li>Optional: after the repeat, <strong>Show Notification</strong> “Added to your pocket”.</li>
               </ol>
               <div className="copy-row">
                 <code>{inboxUrl()}</code>
@@ -95,10 +95,10 @@ export function Settings({ onClose, shareReady, focusShare }: { onClose: () => v
                 </button>
               </div>
               </details>
-              <p className="muted small">Works while the phone is on your tailnet. On Android, Kippu shows up in the share sheet by itself once installed.</p>
+              <p className="muted small">Works while the phone can reach this server. On Android, the app shows up in the share sheet by itself once installed.</p>
             </>
           ) : (
-            <p className="muted small">The share inbox isn't available where this copy of Kippu is hosted. Import from Photos &amp; Files instead.</p>
+            <p className="muted small">Sharing straight from the share sheet needs the app's small server (see the README to host your own). Here, add from Photos &amp; Files instead.</p>
           )}
         </section>
 

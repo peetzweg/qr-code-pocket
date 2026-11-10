@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from "react";
-import { CATEGORIES, isCard, isJourney, type Category } from "../categories";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { hasServer } from "../inbox";
+import { CATEGORIES, isCard, isJourney, isKept, type Category } from "../categories";
 import { lookupBrand, siteLabel } from "../scan/brand";
 import { putImage } from "../store/db";
 import { useImageUrl } from "./CodeView";
@@ -87,7 +88,8 @@ export function Fields({ fields, onChange, suggestions, reading, onTouch, touche
   };
   const src = (k: keyof PassFields) => sourceOf(k, fields[k] as string | undefined, suggestions);
   const journey = isJourney(fields.category);
-  const card = isCard(fields.category);
+  const card = isKept(fields.category);
+  const store = isCard(fields.category);
   const s = suggestions;
   const cats = useMemo(() => CATEGORIES, []);
   return (
@@ -99,11 +101,11 @@ export function Fields({ fields, onChange, suggestions, reading, onTouch, touche
           </button>
         ))}
       </div>
-      <Row label={card ? "Store" : "Title"} k="title" value={fields.title} placeholder={reading ? "Reading the ticket…" : card ? "Uniqlo, IKEA Family…" : "What is it?"} onChange={set} source={src("title")} />
+      <Row label={store ? "Store" : card ? "Name" : "Title"} k="title" value={fields.title} placeholder={reading ? "Reading the ticket…" : store ? "Uniqlo, IKEA Family…" : card ? "Hotel Wi-Fi, home…" : "What is it?"} onChange={set} source={src("title")} />
       {s && <Alternatives items={s.titles} current={fields.title} onPick={(v) => set("title", v)} />}
-      {card && <Branding fields={fields} titleIsGuess={!!touched && !touched.has("title")} onChange={(patch) => onChange({ ...fields, ...patch })} />}
+      {store && <Branding fields={fields} titleIsGuess={!!touched && !touched.has("title")} onChange={(patch) => onChange({ ...fields, ...patch })} />}
       {card ? (
-        <Row label="Notes" k="notes" value={fields.notes} placeholder="Card number, PIN, whose card" onChange={set} multiline />
+        <Row label="Notes" k="notes" value={fields.notes} placeholder={store ? "Card number, PIN, whose card" : "Where it works, who gave it to you"} onChange={set} multiline />
       ) : (
         <>
       <Row label="Date" k="date" type="date" value={fields.date} placeholder="Add" onChange={set} source={src("date")} />
@@ -132,6 +134,9 @@ function Branding({ fields, titleIsGuess, onChange }: { fields: PassFields; titl
   const logo = useImageUrl(fields.logoId);
   const file = useRef<HTMLInputElement>(null);
   const valid = /\w\.\w{2,}/.test(siteLabel(site));
+  // Looking a site up needs the app's server; a static copy (GitHub Pages) can only take a picked logo.
+  const [lookup, setLookup] = useState(false);
+  useEffect(() => void hasServer().then(setLookup), []);
 
   async function look() {
     if (!valid) return;
@@ -156,14 +161,15 @@ function Branding({ fields, titleIsGuess, onChange }: { fields: PassFields; titl
         <input
           type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="search"
           value={site} placeholder="uniqlo.com" onChange={(e) => setSite(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && look()} onBlur={() => site !== (fields.site ?? "") && valid && look()}
+          onKeyDown={(e) => e.key === "Enter" && (lookup ? look() : onChange({ site: siteLabel(site) }))}
+          onBlur={() => site !== (fields.site ?? "") && valid && (lookup ? look() : onChange({ site: siteLabel(site) }))}
         />
       </label>
       <div className="brand-row">
         <span className="brand-logo">{logo ? <img src={logo} alt="" /> : <span className="brand-blank" />}</span>
         <span className="brand-actions">
-          <button className="link strong" onClick={look} disabled={!valid || state === "looking"}>{state === "looking" ? "Looking it up…" : "Get logo from site"}</button>
-          <button className="link" onClick={() => file.current?.click()}>Choose image</button>
+          {lookup && <button className="link strong" onClick={look} disabled={!valid || state === "looking"}>{state === "looking" ? "Looking it up…" : "Get logo from site"}</button>}
+          <button className={lookup ? "link" : "link strong"} onClick={() => file.current?.click()}>{lookup ? "Choose image" : "Choose logo image"}</button>
           {fields.logoId && <button className="link" onClick={() => onChange({ logoId: undefined })}>Remove</button>}
         </span>
         <input ref={file} type="file" accept="image/*" hidden onChange={async (e) => {

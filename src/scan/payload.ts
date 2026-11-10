@@ -171,8 +171,14 @@ export function readPayload(text: string, binary = false, now = new Date()): Pay
   }
 
   if (/^WIFI:/i.test(t)) {
-    const ssid = unescapeMecard(t.match(/S:((?:\\.|[^;])*)/)?.[1]);
-    return { kind: "wifi", label: "Wi-Fi network", title: ssid ? `Wi-Fi ${ssid}` : "Wi-Fi", category: "other", details: [["Network", ssid ?? "—"]] };
+    const part = (k: string) => unescapeMecard(t.match(new RegExp(`[:;]${k}:((?:\\\\.|[^;])*)`))?.[1]);
+    const ssid = part("S");
+    const pass = part("P");
+    const sec = part("T");
+    const details: [string, string][] = [["Network", ssid ?? "—"]];
+    if (pass) details.push(["Password", pass]);
+    details.push(["Security", sec && !/^nopass$/i.test(sec) ? sec.toUpperCase() : "Open"]);
+    return { kind: "wifi", label: "Wi-Fi network", title: ssid ?? "Wi-Fi", category: "wifi", details };
   }
 
   const geo = t.match(/^geo:(-?[\d.]+),(-?[\d.]+)/i);

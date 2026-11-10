@@ -39,3 +39,10 @@ export async function inboxAvailable(): Promise<boolean> {
     return false;
   }
 }
+
+let server: Promise<boolean> | undefined;
+/**
+ * Whether the app's own server (server.mjs) is behind this copy: it powers the share inbox and the
+ * logo lookup for cards. A static host (GitHub Pages) has neither. Asked once per session.
+ */
+export const hasServer = () => (server ??= inboxAvailable());

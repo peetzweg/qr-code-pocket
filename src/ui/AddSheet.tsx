@@ -72,7 +72,7 @@ export function AddSheet({
             {pasteError && <p className="note">{pasteError}</p>}
             {shareReady && (
               <button className="link hint" onClick={onShareHelp}>
-                Tip: send screenshots straight from the share sheet with the “Add to Kippu” shortcut →
+                Tip: send screenshots straight from the share sheet with the “Add to Pocket” shortcut →
               </button>
             )}
           </>

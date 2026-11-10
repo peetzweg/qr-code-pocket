@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { isJourney } from "../categories";
+import { isJourney, isKept } from "../categories";
 import type { Pass } from "../store/db";
 import { deletePass, updatePass } from "../store/passes";
 import { colours, setTheme, useTheme } from "../theme";
@@ -109,6 +109,7 @@ export function TicketFace({ pass, current, stamping, onUse, onRestore, onPlain 
   const plainInk = useTheme((s) => colours(s).plainInk);
   const lit = bright && !!code && !pass.usedAt;
   const shape = shapeOf(pass.category);
+  const kept = isKept(pass.category);
   return (
     <div className="face">
         <div className={`ticket shaped ${shape.line}${pass.usedAt || stamping ? " used" : ""}`} data-shape={pass.category}>
@@ -143,7 +144,7 @@ export function TicketFace({ pass, current, stamping, onUse, onRestore, onPlain 
                   animate={{ opacity: 1, transform: "scale(1) rotate(0deg)" }}
                   transition={{ type: "spring", duration: 0.45, bounce: 0.25 }}
                 >
-                  <Postmark date={postmarkDate(pass.usedAt ?? Date.now())} place={pass.from ?? pass.place} />
+                  <Postmark date={postmarkDate(pass.usedAt ?? Date.now())} place={pass.from ?? pass.place ?? (kept ? pass.title : undefined)} archived={kept} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -159,8 +160,10 @@ export function TicketFace({ pass, current, stamping, onUse, onRestore, onPlain 
         </footer>
       </div>
       <div className="page-actions">
-        {pass.category === "card" && !pass.usedAt ? null : pass.usedAt ? (
-          <button className="btn line wide-flex" onClick={onRestore}>Back to upcoming</button>
+        {pass.usedAt ? (
+          <button className="btn line wide-flex" onClick={onRestore}>{kept ? "Back to cards" : "Back to upcoming"}</button>
+        ) : kept ? (
+          <button className="btn line wide-flex" onClick={onUse} disabled={stamping}>{stamping ? "Archived" : "Archive"}</button>
         ) : (
           <button className="btn solid wide-flex" onClick={onUse} disabled={stamping}>{stamping ? "Postmarked" : "Mark as used"}</button>
         )}
@@ -252,7 +255,7 @@ export function EditTicket({ pass, onDone, onDeleted }: { pass: Pass; onDone: ()
           </dl>
         )}
         <button className="btn line wide danger" onClick={async () => { if (confirm(`Delete “${pass.title || "this ticket"}”? This can't be undone.`)) { await deletePass(pass.id); onDeleted(); } }}>
-          {pass.category === "card" ? "Delete card" : "Delete ticket"}
+          {isKept(pass.category) ? "Delete card" : "Delete ticket"}
         </button>
       </div>
     </>

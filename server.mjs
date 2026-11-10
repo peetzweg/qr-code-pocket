@@ -236,4 +236,4 @@ createServer(async (req, res) => {
   } catch (err) {
     json(res, 500, { error: String(err?.message ?? err) });
   }
-}).listen(port, host, () => console.log(`kippu on http://${host}:${port}`));
+}).listen(port, host, () => console.log(`QR Code Pocket on http://${host}:${port}`));

@@ -1,4 +1,4 @@
-export type Category = "train" | "transit" | "flight" | "sight" | "food" | "event" | "stay" | "card" | "other";
+export type Category = "train" | "transit" | "flight" | "sight" | "food" | "event" | "stay" | "card" | "wifi" | "other";
 
 export interface CategoryInfo {
   id: Category;
@@ -19,13 +19,20 @@ export const CATEGORIES: CategoryInfo[] = [
   { id: "flight", label: "Flight", kanji: "空", from: "#5c74a8", to: "#1a2442" },
   { id: "stay", label: "Stay", kanji: "宿", from: "#1fb386", to: "#0a5c45" },
   { id: "card", label: "Card", kanji: "会", from: "#c9a227", to: "#6b5410" },
+  { id: "wifi", label: "Wi-Fi", kanji: "網", from: "#3a8fd8", to: "#14406e" },
   { id: "other", label: "Other", kanji: "札", from: "#5d6270", to: "#25282f" },
 ];
 
 export const categoryInfo = (id: Category) => CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[CATEGORIES.length - 1];
 
-/** Loyalty and membership cards: no date, never used up; they live in their own tab. */
+/** Loyalty and membership cards: a store, a website, a logo. */
 export const isCard = (id: Category) => id === "card";
+
+/**
+ * Things you keep rather than use up (loyalty cards, Wi-Fi): no date, no countdown, never "used".
+ * They live in the Cards tab, and get archived instead of postmarked.
+ */
+export const isKept = (id: Category) => id === "card" || id === "wifi";
 
 /** Categories that read like a journey: they get the from → to line and a seat. */
 export const isJourney = (id: Category) => id === "train" || id === "transit" || id === "flight";

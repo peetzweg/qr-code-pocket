@@ -13,6 +13,12 @@ export function ticketText(p: Pick<Pass, "title" | "category" | "date" | "time" 
   const route = isJourney(p.category) && p.from && p.to && !p.title.includes(p.from) ? `${p.from} → ${p.to}` : undefined;
   const sub = [route, p.seat, p.place].filter(Boolean).join(" · ") || undefined;
   const day = p.date ? dayLabel(p.date) : undefined;
+  if (p.category === "wifi") {
+    // The password where you can read it off, for a laptop that can't scan.
+    const pw = info?.details.find(([k]) => k === "Password")?.[1];
+    const sec = info?.details.find(([k]) => k === "Security")?.[1];
+    return { info, cat, issuer: cat.label, sub: pw ? `Password · ${pw}` : "Open network", day: sec };
+  }
   if (isCard(p.category)) {
     // A card: the member number under the name (what a cashier types when the scanner won't read).
     const number = code && isLinear(code.format) && code.text.length <= 24 ? code.text.replace(/(\d{4})(?=\d)/g, "$1 ") : undefined;

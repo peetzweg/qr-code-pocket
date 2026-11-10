@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Category } from "../categories";
+import { isKept, type Category } from "../categories";
 import { combine, draftFromFile, saveDraft, withText, type Draft, type PassFields } from "../scan/importer";
 import { prepareOcr, recognize } from "../scan/ocr";
 import type { Code } from "../store/db";
@@ -130,7 +130,7 @@ export function Review({ sources, onDone }: { sources: Source[]; onDone: (saved:
     <>
       <div className="bar">
         <button className="link" onClick={() => onDone(saved.current, cats.current)}>{saved.current ? "Done" : "Cancel"}</button>
-        <span className="bar-title">{items.length > 1 ? `${index + 1} / ${items.length}` : item.fields.category === "card" ? "New card" : "New ticket"}</span>
+        <span className="bar-title">{items.length > 1 ? `${index + 1} / ${items.length}` : isKept(item.fields.category) ? "New card" : "New ticket"}</span>
         <button className="link strong" onClick={save} disabled={item.status === "reading" || saving}>Add</button>
       </div>
       <div className="scroll review">

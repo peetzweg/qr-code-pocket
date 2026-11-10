@@ -23,7 +23,7 @@ wf = {
     {"WFWorkflowActionIdentifier": "is.workflow.actions.repeat.each",
      "WFWorkflowActionParameters": {"GroupingIdentifier": gid, "WFControlFlowMode": 2}},
     {"WFWorkflowActionIdentifier": "is.workflow.actions.notification",
-     "WFWorkflowActionParameters": {"WFNotificationActionTitle": "Kippu", "WFNotificationActionBody": "Added. Open Kippu to file it.", "WFNotificationActionSound": False}},
+     "WFWorkflowActionParameters": {"WFNotificationActionTitle": "QR Code Pocket", "WFNotificationActionBody": "Added. Open QR Code Pocket to file it.", "WFNotificationActionSound": False}},
   ],
 }
 with open(out, "wb") as f: plistlib.dump(wf, f, fmt=plistlib.FMT_BINARY)

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { isKept } from "../categories";
 import type { Pass } from "../store/db";
 import { markUsed, reorder, restore } from "../store/passes";
 import { Close } from "./icons";
@@ -271,14 +272,14 @@ export function WalletStack({ passes, onToast, onSelecting, reorderable = false 
     await new Promise((r) => setTimeout(r, 520));
     await leave(p.id);
     await markUsed(p.id);
-    onToast(`${p.title || "Ticket"} moved to Collected`, () => restore(p.id));
+    onToast(isKept(p.category) ? `${p.title || "Card"} archived` : `${p.title || "Ticket"} moved to Collected`, () => restore(p.id));
   }
   async function restoreIt(p: Pass) {
     select(undefined);
     await new Promise((r) => setTimeout(r, 520));
     await leave(p.id);
     await restore(p.id);
-    onToast(`${p.title || "Ticket"} is back in Upcoming`);
+    onToast(`${p.title || "Ticket"} is back in ${isKept(p.category) ? "Cards" : "Upcoming"}`);
   }
   const act = (a: Action) => (a === "share" ? selected && shareTicket(selected) : setOverlay(a));
 
@@ -326,7 +327,7 @@ export function WalletStack({ passes, onToast, onSelecting, reorderable = false 
               onPlain={() => setOverlay("plain")}
               onAction={act}
             />
-            {p.usedAt && !open && <Postmark date={postmarkDate(p.usedAt)} place={p.from ?? p.place} className="card-postmark" />}
+            {p.usedAt && !open && <Postmark date={postmarkDate(p.usedAt)} place={p.from ?? p.place ?? (isKept(p.category) ? p.title : undefined)} archived={isKept(p.category)} className="card-postmark" />}
           </motion.div>
         );
       })}

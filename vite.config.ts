@@ -4,8 +4,11 @@ import { defineConfig, type Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import pkg from "./package.json" with { type: "json" };
 
-/** Where the app is served from: "/" on its own origin (Tailscale), "/kippu/" on GitHub Pages. */
+/** Where the app is served from: "/" on its own origin (server.mjs), "/qr-code-pocket/" on GitHub Pages. */
 const base = process.env.BASE_PATH ?? "/";
+
+/** A static build (GitHub Pages): no server.mjs behind it, so no share target posting to it. */
+const isStatic = !!process.env.STATIC;
 
 /** Short commit of the build, shown in Settings so you can tell which version a phone is running. */
 const commit = (() => {
@@ -76,7 +79,7 @@ export default defineConfig({
         id: base,
         name: "QR Code Pocket",
         short_name: "QR Pocket",
-        description: "A wallet for the QR codes you collect while travelling: tickets, entries, reservations. Stamp them when used.",
+        description: "Keep every QR code in your pocket: tickets, entries, reservations, loyalty cards, Wi-Fi. Reads them for you, works offline, no account.",
         lang: "en",
         theme_color: "#ffffff",
         background_color: "#ffffff",
@@ -85,13 +88,17 @@ export default defineConfig({
         categories: ["travel", "utilities", "lifestyle"],
         // Shown in Android's and desktop Chrome's richer install dialog.
         screenshots: [{ src: `${base}og.png`, sizes: "1200x630", type: "image/png", form_factor: "wide", label: "QR Code Pocket" }],
-        // Android: Kippu appears in the share sheet. The server stores the files in its inbox (server.mjs).
-        share_target: {
-          action: `${base}api/share`,
-          method: "POST",
-          enctype: "multipart/form-data",
-          params: { title: "title", text: "text", url: "url", files: [{ name: "files", accept: ["image/*", "application/pdf", ".pdf"] }] },
-        },
+        // Android: the app appears in the share sheet; the server stores the files in its inbox (server.mjs).
+        ...(isStatic
+          ? {}
+          : {
+              share_target: {
+                action: `${base}api/share`,
+                method: "POST",
+                enctype: "multipart/form-data",
+                params: { title: "title", text: "text", url: "url", files: [{ name: "files", accept: ["image/*", "application/pdf", ".pdf"] }] },
+              },
+            }),
       },
     }),
   ],

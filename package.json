@@ -1,5 +1,5 @@
 {
-  "name": "qr-code-wallet",
+  "name": "qr-code-pocket",
   "private": true,
   "version": "0.1.0",
   "description": "QR Code Pocket: save QR codes from screenshots and PDFs, keep tickets and reservations in one place, show them full screen. Local-first PWA, works offline.",
@@ -40,6 +40,9 @@
   "keywords": [
     "qr-code",
     "qr-code-wallet",
+    "qr-code-pocket",
+    "loyalty-cards",
+    "wifi-qr-code",
     "ticket-wallet",
     "save-qr-codes",
     "pwa",
@@ -53,6 +56,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/peetzweg/qr-code-wallet.git"
-  }
+    "url": "git+https://github.com/peetzweg/qr-code-pocket.git"
+  },
+  "homepage": "https://peetzweg.github.io/qr-code-pocket/",
+  "bugs": "https://github.com/peetzweg/qr-code-pocket/issues"
 }

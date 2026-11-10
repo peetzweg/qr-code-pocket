@@ -1,6 +1,6 @@
 import {
   AirplaneTilt, ArrowUUpLeft, Bank, Bed, Bus, Cardholder, Camera as PCamera, ClipboardText, DownloadSimple, ForkKnife, Images, Keyboard as PKeyboard,
-  MaskHappy, QrCode, Sun, TrainSimple, UploadSimple, X,
+  MaskHappy, QrCode, Sun, TrainSimple, UploadSimple, WifiHigh, X,
   type Icon,
 } from "@phosphor-icons/react";
 import type { Category } from "../categories";
@@ -29,6 +29,7 @@ const BY_CATEGORY: Record<Category, Icon> = {
   event: MaskHappy,
   stay: Bed,
   card: Cardholder,
+  wifi: WifiHigh,
   other: QrCode,
 };
 

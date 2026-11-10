@@ -5,7 +5,7 @@ import { draftFromText, type Draft } from "./scan/importer";
 import { loadPasses, usePasses, walletOrder, walletSort } from "./store/passes";
 import { useTheme } from "./theme";
 import { AddSheet } from "./ui/AddSheet";
-import { categoryInfo } from "./categories";
+import { isKept, categoryInfo } from "./categories";
 import { WalletStack } from "./ui/WalletStack";
 import { historyDay } from "./ui/format";
 import { Onboarding } from "./ui/Onboarding";
@@ -37,8 +37,8 @@ export function App() {
   const [toast, setToast] = useState<Toast>();
   const [shareReady, setShareReady] = useState(false);
 
-  const upcoming = useMemo(() => walletSort(passes.filter((p) => !p.usedAt && p.category !== "card")), [passes]);
-  const cards = useMemo(() => walletSort(passes.filter((p) => !p.usedAt && p.category === "card")), [passes]);
+  const upcoming = useMemo(() => walletSort(passes.filter((p) => !p.usedAt && !isKept(p.category))), [passes]);
+  const cards = useMemo(() => walletSort(passes.filter((p) => !p.usedAt && isKept(p.category))), [passes]);
   const collected = useMemo(() => passes.filter((p) => p.usedAt).sort(byUsed), [passes]);
   // Tabs exist only for what you have: no Cards tab without a card, no Collected before the first use.
   const shown = { upcoming: true, cards: cards.length > 0, collected: collected.length > 0 };
@@ -200,7 +200,7 @@ export function App() {
               onDone={(n, cats) => {
                 setSources(undefined);
                 if (n) {
-                  const allCards = cats.every((c) => c === "card");
+                  const allCards = cats.every(isKept);
                   setTab(allCards ? "cards" : "upcoming");
                   showToast(n === 1 ? "Added to your pocket" : `Added ${n} ${allCards ? "cards" : "tickets"}`);
                 }

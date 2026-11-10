@@ -1,3 +1,4 @@
+import { isKept } from "../categories";
 import { imageUrl, type Pass } from "../store/db";
 import { colours, getTheme } from "../theme";
 import { longDate, prettyFormat } from "./format";
@@ -186,7 +187,7 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   ctx.textAlign = "left";
   ctx.fillText([t.issuer, t.cat.label !== t.issuer ? t.cat.label : undefined].filter(Boolean).join(" · ").toUpperCase(), X + P, Y + 84);
   ctx.textAlign = "right";
-  ctx.fillText((pass.category === "card" ? t.day ?? "" : pass.date ? longDate(pass.date) : "Undated").toUpperCase(), X + TW - P, Y + 84);
+  ctx.fillText((isKept(pass.category) ? t.day ?? "" : pass.date ? longDate(pass.date) : "Undated").toUpperCase(), X + TW - P, Y + 84);
   ctx.textAlign = "left";
   spaced(ctx, 0);
 
@@ -310,7 +311,7 @@ export async function ticketImage(pass: Pass, codeIndex = 0): Promise<Blob> {
   }
   if (pass.usedAt) {
     const ps = Math.round(s * 0.78);
-    const pm = await loadSvg(postmarkSvg(postmarkDate(pass.usedAt), pass.from ?? pass.place, fg, bg, ps), ps, ps);
+    const pm = await loadSvg(postmarkSvg(postmarkDate(pass.usedAt), pass.from ?? pass.place ?? (isKept(pass.category) ? pass.title : undefined), fg, bg, ps, isKept(pass.category)), ps, ps);
     ctx.save();
     ctx.translate(qx + s / 2, qy + s / 2);
     ctx.rotate(-0.21);

@@ -11,7 +11,14 @@ export const usePasses = <S,>(selector: (s: State) => S) => useStore(store, sele
 export const getPasses = () => store.get().passes;
 
 export async function loadPasses() {
-  const passes = await (await db).getAll("passes");
+  const d = await db;
+  const passes = await d.getAll("passes");
+  // Wi-Fi codes added before Wi-Fi was its own kind.
+  for (const p of passes)
+    if (p.category === "other" && /^WIFI:/i.test(p.codes[0]?.text ?? "")) {
+      p.category = "wifi";
+      await d.put("passes", p);
+    }
   store.set({ passes, loaded: true });
   // Ask the browser not to evict our storage when space runs low (granted silently on installed apps).
   navigator.storage?.persist?.().catch(() => {});

@@ -5,7 +5,7 @@ import { useId } from "react";
  * USED · 使用済 around the bottom, the date big across the middle; a little ink grain and a ragged
  * edge so it reads as pressed, not drawn. One ink, like everything else.
  */
-export function stampSvg({ date, place, color, id, size }: { date: string; place?: string; color: string; id: string; size?: number }) {
+export function stampSvg({ date, place, color, id, size, archived }: { date: string; place?: string; color: string; id: string; size?: number; archived?: boolean }) {
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
   const seed = [...date + (place ?? "")].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 997, 7);
   const top = esc((place ?? "Collected").toUpperCase().slice(0, 18));
@@ -26,7 +26,7 @@ export function stampSvg({ date, place, color, id, size }: { date: string; place
 <circle cx="100" cy="100" r="90" fill="none" stroke-width="8"/>
 <circle cx="100" cy="100" r="62" fill="none" stroke-width="2.5"/>
 <text font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="800" letter-spacing="2" stroke="none"><textPath href="#${id}t" startOffset="50%" text-anchor="middle">${top}</textPath></text>
-<text font-family="Helvetica Neue,Arial,Hiragino Sans,sans-serif" font-size="13" font-weight="800" letter-spacing="2" stroke="none"><textPath href="#${id}b" startOffset="50%" text-anchor="middle">★ USED · 使用済 ★</textPath></text>
+<text font-family="Helvetica Neue,Arial,Hiragino Sans,sans-serif" font-size="13" font-weight="800" letter-spacing="2" stroke="none"><textPath href="#${id}b" startOffset="50%" text-anchor="middle">${archived ? "★ ARCHIVED · 保管 ★" : "★ USED · 使用済 ★"}</textPath></text>
 <rect x="44" y="78" width="112" height="4" stroke="none"/>
 <rect x="44" y="118" width="112" height="4" stroke="none"/>
 <text x="100" y="110" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="23" font-weight="800" letter-spacing="0" stroke="none">${esc(date)}</text>
@@ -34,9 +34,9 @@ export function stampSvg({ date, place, color, id, size }: { date: string; place
 </svg>`;
 }
 
-export function Postmark({ date, place, className = "" }: { date: string; place?: string; className?: string }) {
+export function Postmark({ date, place, className = "", archived }: { date: string; place?: string; className?: string; archived?: boolean }) {
   const id = `s${useId().replace(/\W/g, "")}`;
-  return <span className={`postmark ${className}`} role="img" aria-label={`Used ${date}`} dangerouslySetInnerHTML={{ __html: stampSvg({ date, place, color: "currentColor", id }) }} />;
+  return <span className={`postmark ${className}`} role="img" aria-label={`${archived ? "Archived" : "Used"} ${date}`} dangerouslySetInnerHTML={{ __html: stampSvg({ date, place, color: "currentColor", id, archived }) }} />;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -46,4 +46,4 @@ export const postmarkDate = (ms: number) => {
 };
 
 /** The same stamp as an SVG string, for drawing onto the share image. */
-export const postmarkSvg = (date: string, place: string | undefined, color: string, _under: string, size: number) => stampSvg({ date, place, color, id: "pm", size });
+export const postmarkSvg = (date: string, place: string | undefined, color: string, _under: string, size: number, archived = false) => stampSvg({ date, place, color, id: "pm", size, archived });
